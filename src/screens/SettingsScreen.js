@@ -25,6 +25,7 @@ export const SettingsScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <Image source={illustrations.profileLeaves} style={styles.heroLeaves} resizeMode="contain" />
+          <Image source={illustrations.settingsLeaves} style={styles.heroLeavesSecondary} resizeMode="contain" />
           <Image source={avatars.farmer} style={styles.avatar} resizeMode="cover" />
           <Text style={styles.profileName}>Ramesh Kumar</Text>
           <Text style={styles.profileEmail}>ramesh@example.com</Text>
@@ -78,12 +79,12 @@ const styles = StyleSheet.create({
   },
   decorativeLeaf: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 140,
-    height: 140,
-    opacity: 0.12,
-    zIndex: 1,
+    top: 20,
+    right: 20,
+    width: 200,
+    height: 200,
+    opacity: 0.3,
+    zIndex: -1,
   },
   header: {
     paddingHorizontal: materialTheme.spacing.lg,
@@ -110,9 +111,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -10,
     right: -10,
+    width: 150,
+    height: 150,
+    opacity: 0.35,
+  },
+  heroLeavesSecondary: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
     width: 120,
     height: 120,
-    opacity: 0.15,
+    opacity: 0.3,
   },
   avatar: {
     width: 80,

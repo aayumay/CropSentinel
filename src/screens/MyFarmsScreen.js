@@ -124,7 +124,11 @@ export const MyFarmsScreen = ({ navigation }) => {
       <View style={styles.weatherRow}>
         {WEATHER.map((item) => (
           <View key={item.label} style={styles.weatherCard}>
-            <Feather name={item.icon} size={18} color={materialTheme.colors.primary} />
+            {item.icon === 'sun' || item.icon === 'droplet' || item.icon === 'cloud-rain' || item.icon === 'wind' ? (
+              <Feather name={item.icon} size={18} color={materialTheme.colors.primary} />
+            ) : (
+              <MaterialCommunityIcons name={item.icon} size={18} color={materialTheme.colors.primary} />
+            )}
             <Text style={styles.weatherValue}>{item.value}</Text>
             <Text style={styles.weatherLabel}>{item.label}</Text>
           </View>

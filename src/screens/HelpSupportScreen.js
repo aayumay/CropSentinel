@@ -15,7 +15,10 @@ export const HelpSupportScreen = ({ navigation }) => {
         <View style={styles.headerSpacer} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.placeholder}>Help & Support coming soon.</Text>
+        <View style={styles.placeholderContainer}>
+          <Feather name="help-circle" size={48} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.placeholder}>Help & Support coming soon.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -27,6 +30,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: materialTheme.colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: materialTheme.colors.outline },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: materialTheme.colors.onSurface },
   headerSpacer: { width: 40 },
-  content: { paddingHorizontal: materialTheme.spacing.lg, paddingTop: materialTheme.spacing.xl },
-  placeholder: { fontSize: 15, color: materialTheme.colors.textSecondary, textAlign: 'center', marginTop: materialTheme.spacing.xxl },
+  content: { paddingHorizontal: materialTheme.spacing.lg, paddingTop: materialTheme.spacing.xl, flex: 1, justifyContent: 'center', alignItems: 'center' },
+  placeholderContainer: { alignItems: 'center', gap: materialTheme.spacing.md },
+  placeholder: { fontSize: 16, color: materialTheme.colors.textSecondary, textAlign: 'center', fontWeight: '600' },
 });

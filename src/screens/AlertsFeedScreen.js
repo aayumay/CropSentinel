@@ -33,7 +33,7 @@ const MOCK_ALERTS = [
     description: 'over the next 3 days.',
     time: '2 days ago',
     severity: 'medium',
-    icon: 'sun',
+    icon: 'weather-sunny',
     iconColor: materialTheme.colors.warning,
   },
 ];
@@ -53,7 +53,7 @@ export const AlertsFeedScreen = ({ navigation }) => {
       onPress={() => navigation.navigate('InterventionDetail', { alertId: item.id })}
     >
       <View style={[styles.alertIconCircle, { backgroundColor: item.iconColor + '15' }]}>
-        <Feather name={item.icon} size={20} color={item.iconColor} />
+        <MaterialCommunityIcons name={item.icon === 'weather-sunny' ? 'weather-sunny' : item.icon} size={20} color={item.iconColor} />
       </View>
       <View style={styles.alertContent}>
         <View style={styles.alertTop}>

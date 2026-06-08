@@ -98,11 +98,12 @@ const styles = StyleSheet.create({
   },
   decorativeLeaf: {
     position: 'absolute',
-    top: -10,
-    right: -5,
-    width: 160,
-    height: 160,
-    opacity: 0.15,
+    top: -15,
+    right: -10,
+    width: 180,
+    height: 180,
+    resizeMode: 'contain',
+    zIndex: 1,
   },
   header: {
     marginBottom: materialTheme.spacing.xl,

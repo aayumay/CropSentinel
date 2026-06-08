@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
 
 export const AboutScreen = ({ navigation }) => {
@@ -16,7 +16,7 @@ export const AboutScreen = ({ navigation }) => {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.aboutCard}>
-          <Feather name="sprout" size={48} color={materialTheme.colors.primary} />
+          <MaterialCommunityIcons name="sprout" size={48} color={materialTheme.colors.primary} />
           <Text style={styles.appName}>CropSentinel</Text>
           <Text style={styles.version}>Version 1.0.0</Text>
           <Text style={styles.description}>AI-Powered Farm Intelligence for healthier fields and better yields.</Text>
