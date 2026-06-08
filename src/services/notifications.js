@@ -1,8 +1,13 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { setNotificationHandler } from 'expo-notifications/build/NotificationsHandler';
+import { setNotificationChannelAsync } from 'expo-notifications/build/setNotificationChannelAsync';
+import { getPermissionsAsync, requestPermissionsAsync } from 'expo-notifications/build/NotificationPermissions';
+import { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
+import { cancelAllScheduledNotificationsAsync } from 'expo-notifications/build/cancelAllScheduledNotificationsAsync';
+import { AndroidImportance } from 'expo-notifications/build/NotificationChannelManager.types';
 
 // Configure how notifications are handled when the app is open
-Notifications.setNotificationHandler({
+setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
@@ -14,19 +19,19 @@ export const registerForPushNotificationsAsync = async () => {
   let token = null;
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
+    await setNotificationChannelAsync('default', {
       name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
+      importance: AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#4A7C2F',
     });
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await getPermissionsAsync();
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await requestPermissionsAsync();
     finalStatus = status;
   }
 
@@ -41,7 +46,7 @@ export const registerForPushNotificationsAsync = async () => {
 
 export const scheduleLocalAlert = async (title, body, data = {}) => {
   try {
-    await Notifications.scheduleNotificationAsync({
+    await scheduleNotificationAsync({
       content: {
         title,
         body,
@@ -58,7 +63,7 @@ export const scheduleLocalAlert = async (title, body, data = {}) => {
 
 export const cancelAllNotifications = async () => {
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    await cancelAllScheduledNotificationsAsync();
     return true;
   } catch (error) {
     console.warn('Failed to cancel notifications:', error);
