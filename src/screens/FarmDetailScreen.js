@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { materialTheme } from '../theme';
 import { crops } from '../assets';
+import { fetchDashboard } from '../services';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
 
 const getHealthColor = (score) => {
   if (score >= 80) return materialTheme.colors.success;
@@ -13,7 +16,34 @@ const getHealthColor = (score) => {
 };
 
 export const FarmDetailScreen = ({ navigation, route }) => {
-  const farm = route.params?.farm || {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchDashboard();
+      if (data) {
+        setDashboardData(data);
+      } else {
+        throw new Error('No dashboard data received');
+      }
+    } catch (err) {
+      console.warn('Failed to load dashboard in FarmDetailScreen:', err);
+      setError('Could not retrieve latest farm metrics.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const farmFromRoute = route.params?.farm || {
+    id: 1,
     name: 'North Field',
     cropType: 'Wheat',
     healthScore: 72,
@@ -23,7 +53,47 @@ export const FarmDetailScreen = ({ navigation, route }) => {
     riskSeverity: 'high',
   };
 
-  const zoneType = farm.zoneType || (farm.riskSeverity === 'high' ? 'drought' : 'healthy');
+  const farmData = dashboardData ? {
+    id: dashboardData.farm?.id || farmFromRoute.id,
+    name: dashboardData.farm?.name || farmFromRoute.name,
+    cropType: dashboardData.farm?.crop_type || farmFromRoute.cropType,
+    healthScore: dashboardData.farm_health_score ?? farmFromRoute.healthScore,
+    ndvi: dashboardData.ndvi ?? farmFromRoute.ndvi,
+    moisture: dashboardData.soil_moisture !== undefined ? `${dashboardData.soil_moisture}%` : farmFromRoute.moisture,
+    weatherRisk: dashboardData.weather_risk !== undefined ? `${Math.round(dashboardData.weather_risk * 100)}%` : farmFromRoute.droughtRisk,
+    marketRisk: dashboardData.market_risk !== undefined ? `${Math.round(dashboardData.market_risk * 100)}%` : '40%',
+    lastUpdated: dashboardData.last_updated ? new Date(dashboardData.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '2 hrs ago',
+    riskSeverity: (dashboardData.weather_risk ?? 0.65) > 0.6 ? 'high' : 'low',
+    zoneType: (dashboardData.weather_risk ?? 0.65) > 0.6 ? 'drought' : 'healthy',
+  } : {
+    id: farmFromRoute.id,
+    name: farmFromRoute.name,
+    cropType: farmFromRoute.cropType,
+    healthScore: farmFromRoute.healthScore,
+    ndvi: farmFromRoute.ndvi,
+    moisture: farmFromRoute.moisture,
+    weatherRisk: farmFromRoute.droughtRisk || 'High',
+    marketRisk: '40%',
+    lastUpdated: '2 hrs ago',
+    riskSeverity: farmFromRoute.riskSeverity || 'high',
+    zoneType: farmFromRoute.zoneType || 'drought',
+  };
+
+  const zoneType = farmData.zoneType;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Loading...</Text>
+        </View>
+        <LoadingState message="Fetching farm details..." />
+      </SafeAreaView>
+    );
+  }
 
   const getZoneChipStyle = (zoneType) => {
     const type = zoneType ? zoneType.toLowerCase() : '';
@@ -61,20 +131,27 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{farm.name}</Text>
+        <Text style={styles.headerTitle}>{farmData.name}</Text>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => navigation.navigate('Settings')}>
           <Feather name="settings" size={20} color={materialTheme.colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {error && (
+          <View style={styles.errorBanner}>
+            <Feather name="alert-circle" size={14} color={materialTheme.colors.error} style={{ marginRight: 6 }} />
+            <Text style={styles.errorBannerText}>{error} Using offline fallback data.</Text>
+          </View>
+        )}
+
         <View style={styles.cropHeroCard}>
           <View style={styles.cropHeroInfo}>
             <Text style={styles.cropHeroLabel}>Crop Type</Text>
-            <Text style={styles.cropHeroType}>{farm.cropType}</Text>
+            <Text style={styles.cropHeroType}>{farmData.cropType}</Text>
           </View>
           <Image
-            source={crops[farm.cropType.toLowerCase()] || crops.default}
+            source={crops[(farmData.cropType || '').toLowerCase()] || crops.default}
             style={styles.cropHeroImage}
             resizeMode="contain"
           />
@@ -82,8 +159,8 @@ export const FarmDetailScreen = ({ navigation, route }) => {
 
         <View style={styles.healthCard}>
           <Text style={styles.healthCardLabel}>Health Score</Text>
-          <View style={[styles.healthCircle, { borderColor: getHealthColor(farm.healthScore) }]}>
-            <Text style={styles.healthScore}>{farm.healthScore}</Text>
+          <View style={[styles.healthCircle, { borderColor: getHealthColor(farmData.healthScore) }]}>
+            <Text style={styles.healthScore}>{farmData.healthScore}</Text>
             <Text style={styles.healthDivider}>/100</Text>
           </View>
           <View style={[styles.zoneChip, { backgroundColor: getZoneChipStyle(zoneType).backgroundColor }]}>
@@ -93,22 +170,27 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           </View>
         </View>
 
+        <View style={styles.lastUpdatedContainer}>
+          <Feather name="clock" size={12} color={materialTheme.colors.textSecondary} style={{ marginRight: 4 }} />
+          <Text style={styles.lastUpdatedText}>Last Updated: {farmData.lastUpdated}</Text>
+        </View>
+
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>NDVI</Text>
-            <Text style={styles.statValue}>{farm.ndvi}</Text>
+            <Text style={styles.statValue}>{farmData.ndvi}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Moisture</Text>
-            <Text style={styles.statValue}>{farm.moisture}</Text>
+            <Text style={styles.statValue}>{farmData.moisture}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Risk</Text>
-            <Text style={styles.statValue}>{farm.droughtRisk || 'High'}</Text>
+            <Text style={styles.statLabel}>Weather Risk</Text>
+            <Text style={styles.statValue}>{farmData.weatherRisk}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Last Updated</Text>
-            <Text style={styles.statValue}>2 hrs ago</Text>
+            <Text style={styles.statLabel}>Market Risk</Text>
+            <Text style={styles.statValue}>{farmData.marketRisk}</Text>
           </View>
         </View>
 
@@ -129,14 +211,14 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         <View style={styles.trendCard}>
           <View style={styles.trendHeader}>
             <Text style={styles.trendTitle}>NDVI Trend (Coming D4)</Text>
-            <Text style={styles.trendValue}>{farm.ndvi}</Text>
+            <Text style={styles.trendValue}>{farmData.ndvi}</Text>
           </View>
           <View style={styles.trendChart}>
             <View style={styles.trendLine} />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate('InterventionDetail', { farmId: farm.id })}>
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate('InterventionDetail', { farmId: farmData.id })}>
           <Text style={styles.primaryBtnText}>View Intervention</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -419,5 +501,30 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: materialTheme.colors.primary,
     fontWeight: '700',
+  },
+  lastUpdatedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: materialTheme.spacing.md,
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: materialTheme.spacing.md,
+  },
+  errorBannerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: materialTheme.colors.error,
+    flex: 1,
   },
 });

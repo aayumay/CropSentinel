@@ -1,22 +1,105 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
-
-const interventionDetails = {
-  action: 'Irrigate immediately',
-  description: 'Moisture level critically low',
-  irrigation: '35 mm',
-  cost: '₹1,200',
-  risk: '₹45,000',
-  confidence: 0.91,
-  improvement: '20–25%',
-  roi: '3.8x',
-};
+import { fetchDashboard, getIntervention } from '../services';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
 
 export const InterventionDetailScreen = ({ navigation }) => {
-  const confidencePercent = Math.round(interventionDetails.confidence * 100);
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const loadIntervention = async (isRefreshing = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      const dashboard = await fetchDashboard();
+      if (dashboard && dashboard.recommendation) {
+        const rec = dashboard.recommendation;
+        setDetails({
+          action: rec.action || 'Irrigate within 48 hours',
+          description: 'Timely action recommended by CropSentinel AI.',
+          irrigation: '35 mm',
+          cost: rec.estimated_cost !== undefined ? `₹${rec.estimated_cost.toLocaleString()}` : '₹340',
+          risk: rec.yield_loss_risk !== undefined ? `₹${rec.yield_loss_risk.toLocaleString()}` : '₹18,000',
+          confidence: 0.91,
+          improvement: '20–25%',
+          roi: '3.8x',
+        });
+      } else {
+        throw new Error('No recommendation data found in dashboard response');
+      }
+    } catch (err) {
+      console.warn('Failed to load intervention from dashboard, falling back to mock intervention:', err);
+      try {
+        const fallback = await getIntervention();
+        if (fallback) {
+          setDetails({
+            action: fallback.action ? fallback.action.split(' - ')[0] : 'Irrigate immediately',
+            description: fallback.action ? fallback.action.split(' - ')[1] : 'Moisture level critically low',
+            irrigation: fallback.irrigation_mm ? `${fallback.irrigation_mm} mm` : '35 mm',
+            cost: fallback.cost_inr ? `₹${fallback.cost_inr.toLocaleString()}` : '₹1,200',
+            risk: fallback.risk_inr ? `₹${fallback.risk_inr.toLocaleString()}` : '₹45,000',
+            confidence: fallback.confidence || 0.91,
+            improvement: '20–25%',
+            roi: '3.8x',
+          });
+        }
+      } catch (fallbackErr) {
+        setError('Failed to load recommendation details. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadIntervention();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    loadIntervention(true);
+  }, []);
+
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Intervention</Text>
+        </View>
+        <LoadingState message="Loading intervention details..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !details) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Intervention</Text>
+        </View>
+        <ErrorState message={error} onRetry={() => loadIntervention(false)} />
+      </SafeAreaView>
+    );
+  }
+
+  const confidencePercent = details ? Math.round(details.confidence * 100) : 0;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -30,64 +113,81 @@ export const InterventionDetailScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.recommendationBadge}>
-          <Feather name="zap" size={14} color={materialTheme.colors.error} />
-          <Text style={styles.recommendationText}>AI Recommendation</Text>
-        </View>
-
-        <Text style={styles.actionTitle}>{interventionDetails.action}</Text>
-        <Text style={styles.actionDesc}>{interventionDetails.description}</Text>
-
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Irrigation</Text>
-            <Text style={styles.metricValue}>{interventionDetails.irrigation}</Text>
+      {details ? (
+        <ScrollView 
+          contentContainerStyle={styles.content} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[materialTheme.colors.primary]}
+            />
+          }
+        >
+          <View style={styles.recommendationBadge}>
+            <Feather name="zap" size={14} color={materialTheme.colors.error} />
+            <Text style={styles.recommendationText}>AI Recommendation</Text>
           </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Cost</Text>
-            <Text style={styles.metricValue}>{interventionDetails.cost}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Yield Risk</Text>
-            <Text style={styles.metricValue}>{interventionDetails.risk}</Text>
-          </View>
-        </View>
 
-        <View style={styles.confidenceCard}>
-          <Text style={styles.confidenceLabel}>AI Confidence</Text>
-          <View style={styles.confidenceBarBg}>
-            <View style={[styles.confidenceBarFill, { width: `${confidencePercent}%` }]} />
-          </View>
-          <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
-        </View>
+          <Text style={styles.actionTitle}>{details.action}</Text>
+          <Text style={styles.actionDesc}>{details.description}</Text>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Why this intervention?</Text>
-          <Text style={styles.infoCardText}>
-            Soil moisture is far below optimal range. Timely irrigation can prevent yield loss and improve crop health.
-          </Text>
-        </View>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Expected Outcome</Text>
-          <View style={styles.outcomeRow}>
-            <View style={styles.outcomeBlock}>
-              <Text style={styles.outcomeLabel}>Yield Improvement</Text>
-              <Text style={styles.outcomeValue}>{interventionDetails.improvement}</Text>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>Irrigation</Text>
+              <Text style={styles.metricValue}>{details.irrigation}</Text>
             </View>
-            <View style={styles.outcomeBlock}>
-              <Text style={styles.outcomeLabel}>ROI</Text>
-              <Text style={styles.outcomeValue}>{interventionDetails.roi}</Text>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>Cost</Text>
+              <Text style={styles.metricValue}>{details.cost}</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>Yield Risk</Text>
+              <Text style={styles.metricValue}>{details.risk}</Text>
             </View>
           </View>
+
+          <View style={styles.confidenceCard}>
+            <Text style={styles.confidenceLabel}>AI Confidence</Text>
+            <View style={styles.confidenceBarBg}>
+              <View style={[styles.confidenceBarFill, { width: `${confidencePercent}%` }]} />
+            </View>
+            <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Why this intervention?</Text>
+            <Text style={styles.infoCardText}>
+              Soil moisture is far below optimal range. Timely irrigation can prevent yield loss and improve crop health.
+            </Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Expected Outcome</Text>
+            <View style={styles.outcomeRow}>
+              <View style={styles.outcomeBlock}>
+                <Text style={styles.outcomeLabel}>Yield Improvement</Text>
+                <Text style={styles.outcomeValue}>{details.improvement}</Text>
+              </View>
+              <View style={styles.outcomeBlock}>
+                <Text style={styles.outcomeLabel}>ROI</Text>
+                <Text style={styles.outcomeValue}>{details.roi}</Text>
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.primaryBtn}>
+            <Text style={styles.primaryBtnText}>Apply Intervention</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
+        <View style={styles.loaderContainer}>
+          <Text style={styles.loadingText}>No details found.</Text>
         </View>
+      )}
 
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>Apply Intervention</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
+      {/* Bottom Nav Bar */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
           <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
@@ -155,6 +255,17 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: materialTheme.spacing.lg,
     paddingBottom: materialTheme.spacing.xxl,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: materialTheme.colors.textSecondary,
   },
   recommendationBadge: {
     flexDirection: 'row',

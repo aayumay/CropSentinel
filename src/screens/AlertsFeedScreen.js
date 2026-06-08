@@ -1,51 +1,114 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
 import { illustrations } from '../assets';
-
-const MOCK_ALERTS = [
-  {
-    id: '1',
-    farmName: 'North Field',
-    title: 'Drought risk is high',
-    description: 'Moisture level is critically low. Irrigate immediately.',
-    time: '2 hrs ago',
-    severity: 'high',
-    icon: 'fire',
-    iconColor: materialTheme.colors.error,
-  },
-  {
-    id: '2',
-    farmName: 'South Field',
-    title: 'NDVI improving',
-    description: 'Your crop health is improving steadily.',
-    time: '1 day ago',
-    severity: 'low',
-    icon: 'sprout',
-    iconColor: materialTheme.colors.success,
-  },
-  {
-    id: '3',
-    farmName: 'Weather',
-    title: 'High temperature expected',
-    description: 'over the next 3 days.',
-    time: '2 days ago',
-    severity: 'medium',
-    icon: 'weather-sunny',
-    iconColor: materialTheme.colors.warning,
-  },
-];
+import { fetchAlerts } from '../services';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
 
 export const AlertsFeedScreen = ({ navigation }) => {
-  const [alerts, setAlerts] = useState(MOCK_ALERTS);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const loadAlerts = async (isRefreshing = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      const data = await fetchAlerts();
+      if (!data) {
+        throw new Error('No alerts data received');
+      }
+      
+      // Map mock API fields to screen variables
+      const mapped = (data || []).map(item => {
+        const isNewContract = item.message !== undefined;
+        
+        const idStr = String(item.id);
+        const title = isNewContract ? item.message : (item.title || item.action || 'Attention Needed');
+        const time = isNewContract ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (item.timestamp || item.time || 'Recent');
+        const description = isNewContract ? `Status: ${item.status || 'sent'}` : (item.description || (item.cost_inr ? `Estimated intervention cost: ₹${item.cost_inr}` : ''));
+        const farmName = isNewContract ? 'Vidarbha Cotton Farm' : (item.farm_name || item.farmName || 'Farm Alert');
+        
+        let severity = item.severity || 'medium';
+        let icon = 'alert-circle';
+        let iconColor = materialTheme.colors.warning;
+        
+        // Compute icon and severity
+        if (idStr === '1' || severity === 'high') {
+          severity = 'high';
+          icon = 'fire';
+          iconColor = materialTheme.colors.error;
+        } else if (idStr === '2' || severity === 'low') {
+          severity = 'low';
+          icon = 'sprout';
+          iconColor = materialTheme.colors.success;
+        } else if (idStr === '3' || severity === 'medium') {
+          severity = 'medium';
+          icon = 'weather-sunny';
+          iconColor = materialTheme.colors.warning;
+        }
+        
+        return {
+          id: idStr,
+          farmName,
+          title,
+          description,
+          time,
+          severity,
+          icon,
+          iconColor,
+        };
+      });
+      
+      setAlerts(mapped);
+    } catch (err) {
+      console.warn('Failed to load alerts:', err);
+      setError('Could not retrieve latest alerts.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAlerts();
+  }, []);
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
+    loadAlerts(true);
   }, []);
+
+  if (loading && !refreshing && alerts.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Alerts</Text>
+        </View>
+        <LoadingState message="Fetching alerts..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error && alerts.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Alerts</Text>
+        </View>
+        <ErrorState message={error} onRetry={() => loadAlerts(false)} />
+      </SafeAreaView>
+    );
+  }
+
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -53,7 +116,7 @@ export const AlertsFeedScreen = ({ navigation }) => {
       onPress={() => navigation.navigate('InterventionDetail', { alertId: item.id })}
     >
       <View style={[styles.alertIconCircle, { backgroundColor: item.iconColor + '15' }]}>
-        <MaterialCommunityIcons name={item.icon === 'weather-sunny' ? 'weather-sunny' : item.icon} size={20} color={item.iconColor} />
+        <MaterialCommunityIcons name={item.icon} size={20} color={item.iconColor} />
       </View>
       <View style={styles.alertContent}>
         <View style={styles.alertTop}>
@@ -70,15 +133,24 @@ export const AlertsFeedScreen = ({ navigation }) => {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Alerts</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{alerts.length} Unread Alert{alerts.length !== 1 ? 's' : ''}</Text>
-        </View>
+        {!loading && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {alerts.length} Active Alert{alerts.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {alerts.length === 0 ? (
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={materialTheme.colors.primary} />
+          <Text style={styles.loadingText}>Fetching alerts...</Text>
+        </View>
+      ) : alerts.length === 0 ? (
         <View style={styles.emptyState}>
           <Image source={illustrations.emptyAlerts} style={styles.emptyImage} resizeMode="contain" />
-          <Text style={styles.emptyTitle}>No alerts</Text>
+          <Text style={styles.emptyTitle}>No active alerts</Text>
           <Text style={styles.emptyDesc}>Your farms are looking great. We'll notify you if anything needs attention.</Text>
         </View>
       ) : (
@@ -87,11 +159,18 @@ export const AlertsFeedScreen = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={materialTheme.colors.primary} />}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              colors={[materialTheme.colors.primary]} 
+            />
+          }
           showsVerticalScrollIndicator={false}
         />
       )}
 
+      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
           <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
@@ -146,6 +225,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: materialTheme.colors.error,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: materialTheme.colors.textSecondary,
+  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -182,7 +272,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderWidth: 1,
     borderColor: materialTheme.colors.outline,
-    borderLeftColor: undefined,
   },
   alertIconCircle: {
     width: 44,

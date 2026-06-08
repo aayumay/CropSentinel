@@ -1,33 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { crops } from '../assets';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const MOCK_FARMS = [
-  {
-    id: 'farm_001',
-    name: 'North Field',
-    cropType: 'Wheat',
-    healthScore: 72,
-    ndvi: 0.61,
-    moisture: 'Low',
-    droughtRisk: 'High',
-    riskSeverity: 'high',
-  },
-  {
-    id: 'farm_002',
-    name: 'South Field',
-    cropType: 'Rice',
-    healthScore: 88,
-    ndvi: 0.72,
-    moisture: 'Optimal',
-    droughtRisk: 'Low',
-    riskSeverity: 'low',
-  },
-];
+import { USE_MOCK_DATA } from '../config/environment';
+import { fetchDashboard, fetchAgentStatus } from '../services';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
 
 const WEATHER = [
   { icon: 'sun', value: '31°C', label: 'Temp' },
@@ -35,12 +16,6 @@ const WEATHER = [
   { icon: 'cloud-rain', value: '10%', label: 'Rain Chance' },
   { icon: 'wind', value: '18 km/h', label: 'Wind' },
 ];
-
-const getRiskColor = (severity) => {
-  if (severity === 'high') return materialTheme.colors.error;
-  if (severity === 'medium') return materialTheme.colors.warning;
-  return materialTheme.colors.success;
-};
 
 const getRiskLabel = (severity) => {
   if (severity === 'high') return 'Drought Risk';
@@ -60,59 +35,175 @@ const getHealthColor = (score) => {
   return materialTheme.colors.error;
 };
 
-export const MyFarmsScreen = ({ navigation }) => {
-  const renderFarmCard = ({ item }) => {
-    const riskBadge = getRiskBadgeStyle(item.riskSeverity);
+// Loading Skeleton Components
+const SkeletonSummaryCard = () => (
+  <View style={styles.skeletonSummaryCard}>
+    <View style={styles.skeletonSummaryTitle} />
+    <View style={styles.skeletonSummaryMetrics}>
+      <View style={styles.skeletonSummaryMetric} />
+      <View style={styles.skeletonSummaryMetric} />
+      <View style={styles.skeletonSummaryMetric} />
+    </View>
+    <View style={styles.skeletonRecommendation} />
+  </View>
+);
 
-    return (
-      <TouchableOpacity
-        style={styles.farmCard}
-        onPress={() => navigation.navigate('FarmDetail', { farm: item })}
-      >
-        <View style={styles.farmCardLeft}>
-          <Image
-            source={crops[item.cropType.toLowerCase()] || crops.default}
-            style={styles.farmCropImage}
-            resizeMode="contain"
-          />
-        </View>
-        <View style={styles.farmCardCenter}>
-          <Text style={styles.farmName}>{item.name}</Text>
-          <Text style={styles.farmCropType}>{item.cropType}</Text>
-          <View style={[styles.riskBadge, { backgroundColor: riskBadge.backgroundColor }]}>
-            <Text style={[styles.riskBadgeText, { color: riskBadge.color }]}>
-              {getRiskLabel(item.riskSeverity)}
-            </Text>
-          </View>
-          <View style={styles.farmStats}>
-            <View style={styles.farmStat}>
-              <Text style={styles.farmStatLabel}>NDVI</Text>
-              <Text style={styles.farmStatValue}>{item.ndvi}</Text>
-            </View>
-            <View style={styles.farmStatDivider} />
-            <View style={styles.farmStat}>
-              <Text style={styles.farmStatLabel}>Moisture</Text>
-              <Text style={styles.farmStatValue}>{item.moisture}</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.farmCardRight}>
-          <View style={[styles.healthCircle, { borderColor: getHealthColor(item.healthScore) }]}>
-            <Text style={styles.healthScore}>{item.healthScore}</Text>
-            <Text style={styles.healthLabel}>/100</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+const SkeletonAgentCard = () => (
+  <View style={styles.skeletonAgentCard}>
+    <View style={styles.skeletonAgentTitle} />
+    <View style={styles.skeletonAgentItems}>
+      <View style={styles.skeletonAgentItem} />
+      <View style={styles.skeletonAgentItem} />
+      <View style={styles.skeletonAgentItem} />
+    </View>
+  </View>
+);
+
+const SkeletonCard = () => (
+  <View style={styles.skeletonCard}>
+    <View style={styles.skeletonLeft} />
+    <View style={styles.skeletonCenter}>
+      <View style={styles.skeletonLineShort} />
+      <View style={styles.skeletonLineLong} />
+    </View>
+    <View style={styles.skeletonRight} />
+  </View>
+);
+
+export const MyFarmsScreen = ({ navigation }) => {
+  const [farms, setFarms] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const loadDashboardData = async (isRefreshing = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      const [dashData, agentData] = await Promise.all([
+        fetchDashboard(),
+        fetchAgentStatus(),
+      ]);
+      
+      if (dashData) {
+        if (dashData.farm) {
+          const singleFarm = {
+            id: String(dashData.farm.id || 1),
+            name: dashData.farm.name || 'Vidarbha Cotton Farm',
+            cropType: dashData.farm.crop_type || 'cotton',
+            healthScore: dashData.farm_health_score ?? 72,
+            ndvi: dashData.ndvi ?? 0.21,
+            moisture: `${dashData.soil_moisture ?? 18}%`,
+            riskSeverity: (dashData.weather_risk ?? 0.65) > 0.6 ? 'high' : (dashData.weather_risk ?? 0.65) > 0.3 ? 'medium' : 'low',
+            zoneType: (dashData.weather_risk ?? 0.65) > 0.6 ? 'drought' : 'healthy',
+          };
+
+          const mappedSummary = {
+            healthScore: dashData.farm_health_score ?? 72,
+            ndvi: dashData.ndvi ?? 0.21,
+            moisture: `${dashData.soil_moisture ?? 18}%`,
+            recommendation: dashData.recommendation?.action || 'Irrigate within 48 hours',
+          };
+
+          setFarms([singleFarm]);
+          setSummary(mappedSummary);
+        } else {
+          // Pre-existing mock data structure fallback (e.g. from mockData)
+          const rawFarms = dashData.farms || [];
+          const mappedFarms = rawFarms.map(f => ({
+            id: String(f.id),
+            name: f.name,
+            cropType: f.cropType || f.crop_type || 'Wheat',
+            healthScore: f.healthScore || f.health_score || 72,
+            ndvi: f.ndvi || 0.61,
+            moisture: f.moisture || 'Low',
+            riskSeverity: f.riskSeverity || (f.zone_type === 'drought' ? 'high' : 'low'),
+            zoneType: f.zoneType || f.zone_type || 'drought',
+          }));
+
+          const mappedSummary = dashData.summary ? {
+            healthScore: dashData.summary.healthScore || dashData.summary.health_score || 80,
+            ndvi: dashData.summary.ndvi || 0.58,
+            moisture: dashData.summary.moisture || 'Optimal',
+            recommendation: dashData.summary.recommendation || 'All systems stable.',
+          } : null;
+
+          setFarms(mappedFarms);
+          setSummary(mappedSummary);
+        }
+      } else {
+        throw new Error('No dashboard data received');
+      }
+
+      if (agentData) {
+        // Map agent statuses
+        const mappedAgents = [
+          {
+            name: 'Satellite Agent',
+            status: agentData.satellite || 'completed',
+            indicator: (agentData.satellite || 'completed') === 'completed' ? '#22C55E' : '#FEF3C7',
+          },
+          {
+            name: 'Weather Agent',
+            status: agentData.weather || 'completed',
+            indicator: (agentData.weather || 'completed') === 'completed' ? '#22C55E' : '#FEF3C7',
+          },
+          {
+            name: 'Soil Agent',
+            status: agentData.soil || 'completed',
+            indicator: (agentData.soil || 'completed') === 'completed' ? '#22C55E' : '#FEF3C7',
+          },
+        ];
+        setAgents(mappedAgents);
+      }
+    } catch (err) {
+      console.warn('Failed to load dashboard data:', err);
+      setError('Could not retrieve dashboard metrics. Please check connection and try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  if (loading && !refreshing && farms.length === 0) {
+    return <LoadingState message="Fetching farm data..." />;
+  }
+
+  if (error && farms.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Good Morning, Farmer 🌿</Text>
+        </View>
+        <ErrorState message={error} onRetry={() => loadDashboardData(false)} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('Settings')}>
             <Feather name="menu" size={22} color={materialTheme.colors.onSurface} />
           </TouchableOpacity>
+          {USE_MOCK_DATA && (
+            <View style={styles.demoChip}>
+              <Text style={styles.demoChipText}>Using Demo Data</Text>
+            </View>
+          )}
           <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('AlertsFeed')}>
             <Feather name="bell" size={20} color={materialTheme.colors.onSurface} />
           </TouchableOpacity>
@@ -121,37 +212,152 @@ export const MyFarmsScreen = ({ navigation }) => {
         <Text style={styles.subtitle}>Here's what's happening on your farms</Text>
       </View>
 
-      <View style={styles.weatherRow}>
-        {WEATHER.map((item) => (
-          <View key={item.label} style={styles.weatherCard}>
-            {item.icon === 'sun' || item.icon === 'droplet' || item.icon === 'cloud-rain' || item.icon === 'wind' ? (
-              <Feather name={item.icon} size={18} color={materialTheme.colors.primary} />
-            ) : (
-              <MaterialCommunityIcons name={item.icon} size={18} color={materialTheme.colors.primary} />
-            )}
-            <Text style={styles.weatherValue}>{item.value}</Text>
-            <Text style={styles.weatherLabel}>{item.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>My Farms</Text>
-        <Text style={styles.sectionCount}>2 Farms • 1 Alert</Text>
-      </View>
-
-      <FlatList
-        data={MOCK_FARMS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderFarmCard}
-        contentContainerStyle={styles.list}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-      />
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadDashboardData(true)}
+            colors={[materialTheme.colors.primary]}
+          />
+        }
+      >
+        {/* Weather Row */}
+        <View style={styles.weatherRow}>
+          {WEATHER.map((item) => (
+            <View key={item.label} style={styles.weatherCard}>
+              {item.icon === 'sun' || item.icon === 'droplet' || item.icon === 'cloud-rain' || item.icon === 'wind' ? (
+                <Feather name={item.icon} size={18} color={materialTheme.colors.primary} />
+              ) : (
+                <MaterialCommunityIcons name={item.icon} size={18} color={materialTheme.colors.primary} />
+              )}
+              <Text style={styles.weatherValue}>{item.value}</Text>
+              <Text style={styles.weatherLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
 
+        {loading ? (
+          <View style={styles.skeletonContainer}>
+            <SkeletonSummaryCard />
+            <SkeletonAgentCard />
+            <Text style={styles.loadingFarmsText}>Loading Farms...</Text>
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
+        ) : (
+          <>
+            {/* Summary Card */}
+            {summary && (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Field Health Summary</Text>
+                <View style={styles.summaryMetrics}>
+                  <View style={styles.summaryMetric}>
+                    <Text style={styles.summaryMetricLabel}>Avg Health</Text>
+                    <Text style={styles.summaryMetricValue}>{summary.healthScore}/100</Text>
+                  </View>
+                  <View style={styles.summaryMetricDivider} />
+                  <View style={styles.summaryMetric}>
+                    <Text style={styles.summaryMetricLabel}>Avg NDVI</Text>
+                    <Text style={styles.summaryMetricValue}>{summary.ndvi}</Text>
+                  </View>
+                  <View style={styles.summaryMetricDivider} />
+                  <View style={styles.summaryMetric}>
+                    <Text style={styles.summaryMetricLabel}>Moisture</Text>
+                    <Text style={styles.summaryMetricValue}>{summary.moisture}</Text>
+                  </View>
+                </View>
+                <View style={styles.recommendationBox}>
+                  <Feather name="cpu" size={16} color={materialTheme.colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.recommendationText} numberOfLines={2}>
+                    AI: {summary.recommendation}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Agent Status Widget */}
+            <View style={styles.agentStatusCard}>
+              <Text style={styles.agentStatusTitle}>AI Agent Core</Text>
+              <View style={styles.agentRow}>
+                {agents.map((agent) => (
+                  <View key={agent.name} style={styles.agentItem}>
+                    <View style={[styles.agentIndicator, { backgroundColor: agent.indicator }]} />
+                    <View style={styles.agentInfo}>
+                      <Text style={styles.agentName}>{agent.name}</Text>
+                      <Text style={styles.agentStatusText}>{agent.status}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Section Header */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>My Farms</Text>
+              <Text style={styles.sectionCount}>
+                {farms.length} Farms • 1 Alert
+              </Text>
+            </View>
+
+            {/* Farms List */}
+            <View style={styles.farmsContainer}>
+              {farms.map((item) => {
+                const riskBadge = getRiskBadgeStyle(item.riskSeverity);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.farmCard}
+                    onPress={() => navigation.navigate('FarmDetail', { farm: item })}
+                  >
+                    <View style={styles.farmCardLeft}>
+                      <Image
+                        source={crops[(item.cropType || '').toLowerCase()] || crops.default}
+                        style={styles.farmCropImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <View style={styles.farmCardCenter}>
+                      <Text style={styles.farmName}>{item.name}</Text>
+                      <Text style={styles.farmCropType}>{item.cropType}</Text>
+                      <View style={[styles.riskBadge, { backgroundColor: riskBadge.backgroundColor }]}>
+                        <Text style={[styles.riskBadgeText, { color: riskBadge.color }]}>
+                          {getRiskLabel(item.riskSeverity)}
+                        </Text>
+                      </View>
+                      <View style={styles.farmStats}>
+                        <View style={styles.farmStat}>
+                          <Text style={styles.farmStatLabel}>NDVI</Text>
+                          <Text style={styles.farmStatValue}>{item.ndvi}</Text>
+                        </View>
+                        <View style={styles.farmStatDivider} />
+                        <View style={styles.farmStat}>
+                          <Text style={styles.farmStatLabel}>Moisture</Text>
+                          <Text style={styles.farmStatValue}>{item.moisture}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.farmCardRight}>
+                      <View style={[styles.healthCircle, { borderColor: getHealthColor(item.healthScore) }]}>
+                        <Text style={styles.healthScore}>{item.healthScore}</Text>
+                        <Text style={styles.healthLabel}>/100</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddField')}>
         <Feather name="plus" size={22} color="#FFFFFF" />
       </TouchableOpacity>
 
+      {/* Bottom Nav Bar */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => navigation.navigate('MyFarms')}>
           <Feather name="home" size={20} color={materialTheme.colors.primary} />
@@ -214,7 +420,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: materialTheme.colors.outline,
   },
-
+  demoChip: {
+    backgroundColor: 'rgba(74, 124, 47, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 124, 47, 0.25)',
+  },
+  demoChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: materialTheme.colors.primary,
+  },
   greeting: {
     fontSize: 26,
     fontWeight: '700',
@@ -226,10 +444,13 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     marginTop: materialTheme.spacing.xs,
   },
+  scrollContent: {
+    paddingBottom: 120,
+  },
   weatherRow: {
     flexDirection: 'row',
     paddingHorizontal: materialTheme.spacing.lg,
-    marginBottom: materialTheme.spacing.lg,
+    marginBottom: materialTheme.spacing.md,
     gap: materialTheme.spacing.sm,
   },
   weatherCard: {
@@ -252,11 +473,115 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     marginTop: materialTheme.spacing.xs,
   },
+  summaryCard: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.card,
+    padding: materialTheme.spacing.lg,
+    marginHorizontal: materialTheme.spacing.lg,
+    marginBottom: materialTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+  },
+  summaryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+    marginBottom: 12,
+  },
+  summaryMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  summaryMetric: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  summaryMetricLabel: {
+    fontSize: 11,
+    color: materialTheme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  summaryMetricValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+  },
+  summaryMetricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: materialTheme.colors.outline,
+    alignSelf: 'center',
+  },
+  recommendationBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: materialTheme.colors.surfaceVariant,
+    padding: 10,
+    borderRadius: 8,
+  },
+  recommendationText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: materialTheme.colors.primaryDark,
+    flex: 1,
+  },
+  agentStatusCard: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.card,
+    padding: materialTheme.spacing.lg,
+    marginHorizontal: materialTheme.spacing.lg,
+    marginBottom: materialTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+  },
+  agentStatusTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+    marginBottom: 12,
+  },
+  agentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  agentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    backgroundColor: materialTheme.colors.surfaceVariant,
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+  },
+  agentIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  agentInfo: {
+    flex: 1,
+  },
+  agentName: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: materialTheme.colors.textSecondary,
+  },
+  agentStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+    marginTop: 1,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: materialTheme.spacing.lg,
+    marginTop: materialTheme.spacing.sm,
     marginBottom: materialTheme.spacing.md,
   },
   sectionTitle: {
@@ -269,9 +594,8 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     fontWeight: '500',
   },
-  list: {
+  farmsContainer: {
     paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: 120,
   },
   farmCard: {
     flexDirection: 'row',
@@ -415,5 +739,117 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: materialTheme.colors.primary,
     fontWeight: '700',
+  },
+  // Skeleton Styles
+  skeletonContainer: {
+    paddingHorizontal: materialTheme.spacing.lg,
+  },
+  skeletonSummaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E0',
+    opacity: 0.6,
+  },
+  skeletonSummaryTitle: {
+    width: '40%',
+    height: 14,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+    marginBottom: 16,
+  },
+  skeletonSummaryMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  skeletonSummaryMetric: {
+    width: '25%',
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+  },
+  skeletonRecommendation: {
+    width: '100%',
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+  },
+  skeletonAgentCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E0',
+    opacity: 0.6,
+  },
+  skeletonAgentTitle: {
+    width: '30%',
+    height: 14,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+    marginBottom: 16,
+  },
+  skeletonAgentItems: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  skeletonAgentItem: {
+    flex: 1,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F0',
+  },
+  loadingFarmsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: materialTheme.colors.textSecondary,
+    marginVertical: 12,
+  },
+  skeletonCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E0',
+    opacity: 0.6,
+    height: 96,
+  },
+  skeletonLeft: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F0',
+  },
+  skeletonCenter: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'center',
+    gap: 8,
+  },
+  skeletonLineShort: {
+    width: '40%',
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+  },
+  skeletonLineLong: {
+    width: '80%',
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F0',
+  },
+  skeletonRight: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F5F5F0',
+    alignSelf: 'center',
   },
 });
