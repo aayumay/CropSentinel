@@ -5,9 +5,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { materialTheme } from '../theme';
 import { crops } from '../assets';
-import { fetchDashboard } from '../services';
+import { fetchDashboard, getNdviHistory, getMarketHistory } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+
+import { CartesianChart, Line, Scatter } from 'victory-native';
+import { matchFont } from '@shopify/react-native-skia';
+
+const font = matchFont({
+  fontFamily: 'sans-serif',
+  fontSize: 10,
+  fontWeight: 'normal',
+});
 
 const getHealthColor = (score) => {
   if (score >= 80) return materialTheme.colors.success;
@@ -17,6 +26,8 @@ const getHealthColor = (score) => {
 
 export const FarmDetailScreen = ({ navigation, route }) => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [ndviData, setNdviData] = useState([]);
+  const [marketData, setMarketData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,14 +35,23 @@ export const FarmDetailScreen = ({ navigation, route }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchDashboard();
-      if (data) {
-        setDashboardData(data);
-      } else {
-        throw new Error('No dashboard data received');
+      const [dash, ndviRes, marketRes] = await Promise.all([
+        fetchDashboard(),
+        getNdviHistory(),
+        getMarketHistory(),
+      ]);
+      
+      if (dash) {
+        setDashboardData(dash);
+      }
+      if (ndviRes && ndviRes.trend) {
+        setNdviData(ndviRes.trend);
+      }
+      if (marketRes) {
+        setMarketData(marketRes);
       }
     } catch (err) {
-      console.warn('Failed to load dashboard in FarmDetailScreen:', err);
+      console.warn('Failed to load dashboard or history in FarmDetailScreen:', err);
       setError('Could not retrieve latest farm metrics.');
     } finally {
       setLoading(false);
@@ -210,11 +230,87 @@ export const FarmDetailScreen = ({ navigation, route }) => {
 
         <View style={styles.trendCard}>
           <View style={styles.trendHeader}>
-            <Text style={styles.trendTitle}>NDVI Trend (Coming D4)</Text>
+            <Text style={styles.trendTitle}>NDVI Trend (Last 7 Days)</Text>
             <Text style={styles.trendValue}>{farmData.ndvi}</Text>
           </View>
-          <View style={styles.trendChart}>
-            <View style={styles.trendLine} />
+          <View style={styles.chartContainer}>
+            {ndviData.length > 0 ? (
+              <CartesianChart
+                data={ndviData}
+                xKey="day"
+                yKeys={["value"]}
+                axisOptions={{
+                  font,
+                  lineColor: materialTheme.colors.outline,
+                  labelColor: materialTheme.colors.textSecondary,
+                  labelOffset: 4,
+                }}
+              >
+                {({ points }) => (
+                  <>
+                    <Line
+                      points={points.value}
+                      color={materialTheme.colors.primary}
+                      strokeWidth={3}
+                      curveType="natural"
+                    />
+                    <Scatter
+                      points={points.value}
+                      radius={4}
+                      color={materialTheme.colors.primary}
+                      shape="circle"
+                      style="fill"
+                    />
+                  </>
+                )}
+              </CartesianChart>
+            ) : (
+              <Text style={styles.noDataText}>No NDVI trend data available</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.trendCard}>
+          <View style={styles.trendHeader}>
+            <Text style={styles.trendTitle}>Mandi Price Trend</Text>
+            <Text style={styles.trendValue}>
+              {marketData.length > 0 ? `₹${marketData[marketData.length - 1].price}` : '₹6,500'}
+            </Text>
+          </View>
+          <View style={styles.chartContainer}>
+            {marketData.length > 0 ? (
+              <CartesianChart
+                data={marketData}
+                xKey="day"
+                yKeys={["price"]}
+                axisOptions={{
+                  font,
+                  lineColor: materialTheme.colors.outline,
+                  labelColor: materialTheme.colors.textSecondary,
+                  labelOffset: 4,
+                }}
+              >
+                {({ points }) => (
+                  <>
+                    <Line
+                      points={points.price}
+                      color={materialTheme.colors.tertiary}
+                      strokeWidth={3}
+                      curveType="natural"
+                    />
+                    <Scatter
+                      points={points.price}
+                      radius={4}
+                      color={materialTheme.colors.tertiary}
+                      shape="circle"
+                      style="fill"
+                    />
+                  </>
+                )}
+              </CartesianChart>
+            ) : (
+              <Text style={styles.noDataText}>No mandi price data available</Text>
+            )}
           </View>
         </View>
 
@@ -526,5 +622,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: materialTheme.colors.error,
     flex: 1,
+  },
+  chartContainer: {
+    height: 180,
+    width: '100%',
+    marginTop: materialTheme.spacing.md,
+  },
+  noDataText: {
+    fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { fetchDashboard, getIntervention } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { scheduleLocalAlert } from '../services/notifications';
 
 export const InterventionDetailScreen = ({ navigation }) => {
   const [details, setDetails] = useState(null);
@@ -177,7 +178,20 @@ export const InterventionDetailScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.primaryBtn}>
+          <TouchableOpacity 
+            style={styles.primaryBtn}
+            onPress={async () => {
+              await scheduleLocalAlert(
+                "CropSentinel Alert",
+                "Intervention applied successfully. Continue monitoring your farm."
+              );
+              Alert.alert(
+                "Success",
+                "Intervention applied successfully! Continue monitoring your farm.",
+                [{ text: "OK" }]
+              );
+            }}
+          >
             <Text style={styles.primaryBtnText}>Apply Intervention</Text>
           </TouchableOpacity>
         </ScrollView>

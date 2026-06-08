@@ -70,5 +70,13 @@ export const getNdviHistory = async () => {
 };
 export const getMarketHistory = async () => {
   await delay(500);
-  return { status: 'success' };
+  return [
+    { day: 'Mon', price: 6200 },
+    { day: 'Tue', price: 6250 },
+    { day: 'Wed', price: 6300 },
+    { day: 'Thu', price: 6150 },
+    { day: 'Fri', price: 6400 },
+    { day: 'Sat', price: 6350 },
+    { day: 'Sun', price: 6500 },
+  ];
 };

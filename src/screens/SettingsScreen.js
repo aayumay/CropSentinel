@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Switch } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { avatars, illustrations } from '../assets';
+import { registerForPushNotificationsAsync } from '../services/notifications';
 
 export const SettingsScreen = ({ navigation }) => {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const handleToggleNotifications = async (value) => {
+    setNotificationsEnabled(value);
+    if (value) {
+      await registerForPushNotificationsAsync();
+    }
+  };
+
   const menuItems = [
     { icon: 'home', label: 'Farm Details', route: 'MyFarms' },
     { icon: 'settings', label: 'Account Settings', route: 'AccountSettings' },
@@ -43,6 +53,26 @@ export const SettingsScreen = ({ navigation }) => {
               <Feather name="chevron-right" size={18} color={materialTheme.colors.textSecondary} />
             </TouchableOpacity>
           ))}
+        </View>
+
+        <View style={[styles.menuCard, { marginTop: materialTheme.spacing.md }]}>
+          <View style={styles.preferenceItem}>
+            <View style={styles.menuLeft}>
+              <View style={styles.menuIconCircle}>
+                <Feather name="bell" size={18} color={materialTheme.colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.menuLabel}>Push Notifications</Text>
+                <Text style={styles.preferenceSublabel}>Receive alerts about farm health</Text>
+              </View>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleToggleNotifications}
+              trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.primary }}
+              thumbColor={notificationsEnabled ? '#FFFFFF' : '#F4F3F0'}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -209,5 +239,18 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: materialTheme.colors.primary,
     fontWeight: '700',
+  },
+  preferenceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: materialTheme.spacing.md,
+    paddingVertical: materialTheme.spacing.md,
+  },
+  preferenceSublabel: {
+    fontSize: 11,
+    color: materialTheme.colors.textSecondary,
+    marginTop: 2,
+    fontWeight: '500',
   },
 });
