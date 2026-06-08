@@ -1,27 +1,26 @@
-// Centralized asset exports using small data-URI placeholders so bundler resolves images even if real assets are missing.
 const tinyPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=';
 const dataUri = (b64) => `data:image/png;base64,${b64}`;
 
 export const illustrations = {
-  onboarding: { uri: dataUri(tinyPngBase64) },
-  leavesTopRight: { uri: dataUri(tinyPngBase64) },
-  leavesBottomRight: { uri: dataUri(tinyPngBase64) },
-  profileLeaves: { uri: dataUri(tinyPngBase64) },
-  settingsLeaves: { uri: dataUri(tinyPngBase64) },
-  emptyAlerts: { uri: dataUri(tinyPngBase64) },
-  healthyBanner: { uri: dataUri(tinyPngBase64) },
+  onboarding: require('./onboarding-farm.png'),
+  leavesTopRight: require('./leaves-top-right.png'),
+  leavesBottomRight: require('./leaves-bottom-right.png'),
+  profileLeaves: require('./profile-leaves.png'),
+  settingsLeaves: require('./settings-leaves.png'),
+  emptyAlerts: require('./empty-alerts.png'),
+  healthyBanner: require('./healthy-farm-banner.png'),
 };
 
 export const crops = {
-  wheat: { uri: dataUri(tinyPngBase64) },
-  rice: { uri: dataUri(tinyPngBase64) },
-  corn: { uri: dataUri(tinyPngBase64) },
-  sugarcane: { uri: dataUri(tinyPngBase64) },
-  default: { uri: dataUri(tinyPngBase64) },
+  wheat: require('./wheat.png'),
+  rice: require('./rice.png'),
+  corn: require('./corn.png'),
+  sugarcane: require('./sugarcane.png'),
+  default: require('./wheat.png'),
 };
 
 export const avatars = {
-  farmer: { uri: dataUri(tinyPngBase64) },
+  farmer: require('./farmer-avatar.png'),
 };
 
 export const branding = {

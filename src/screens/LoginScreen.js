@@ -8,68 +8,78 @@ import { illustrations } from '../assets';
 export const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.headerArea}>
-        <Image source={illustrations.leavesTopRight} style={styles.decorativeLeaf} />
-        <Text style={styles.welcome}>Welcome back</Text>
-        <Text style={styles.subtitle}>Log in to view your farm insights and alerts.</Text>
-      </View>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <Image source={illustrations.leavesTopRight} style={styles.decorativeLeaf} resizeMode="contain" />
 
-      <View style={styles.formCard}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputRow}>
-            <Feather name="mail" size={20} color={materialTheme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="farmer@example.com"
-              placeholderTextColor={materialTheme.colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.welcome}>Welcome back! 👋</Text>
+          <Text style={styles.subtitle}>Login to continue</Text>
+        </View>
+
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <View style={styles.inputRow}>
+              <Feather name="mail" size={18} color={materialTheme.colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={materialTheme.colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            <Text style={styles.inputHint}>example@email.com</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputRow}>
+              <Feather name="lock" size={18} color={materialTheme.colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={materialTheme.colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                <Feather name={showPassword ? 'eye' : 'eye-off'} size={18} color={materialTheme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.inputHint}>••••••••••••</Text>
+          </View>
+
+          <TouchableOpacity style={styles.forgotBtn}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.loginBtn} onPress={() => navigation.replace('MyFarms')}>
+            <Text style={styles.loginText}>Login</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.orText}>or continue with</Text>
+
+          <View style={styles.socialRow}>
+            <TouchableOpacity style={styles.socialBtn}>
+              <Text style={styles.socialText}>G</Text>
+              <Text style={styles.socialLabel}>Google</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn}>
+              <Text style={styles.socialText}></Text>
+              <Text style={styles.socialLabel}>Apple</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <View style={styles.inputRow}>
-            <Feather name="lock" size={20} color={materialTheme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="********"
-              placeholderTextColor={materialTheme.colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.replace('MyFarms')}
-        >
-          <Text style={styles.primaryButtonText}>Login</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.orLabel}>or continue with</Text>
-
-        <View style={styles.socialRow}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialText}>Google</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialText}>Apple</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity onPress={() => navigation.navigate('Onboarding')} style={styles.linkRow}>
-          <Text style={styles.linkText}>New farmer? </Text>
-          <Text style={[styles.linkText, styles.linkAction]}>Create Account</Text>
+        <TouchableOpacity style={styles.signupRow} onPress={() => navigation.navigate('Onboarding')}>
+          <Text style={styles.signupText}>New farmer? </Text>
+          <Text style={styles.signupAction}>Create Account</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -80,111 +90,139 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: materialTheme.colors.background,
-    padding: materialTheme.spacing.lg,
-    justifyContent: 'space-between',
   },
-  headerArea: {
-    marginTop: materialTheme.spacing.xl,
+  container: {
+    flex: 1,
+    paddingHorizontal: materialTheme.spacing.xl,
+    justifyContent: 'center',
+  },
+  decorativeLeaf: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 140,
+    height: 140,
+    opacity: 0.15,
+  },
+  header: {
+    marginBottom: materialTheme.spacing.xl,
   },
   welcome: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: materialTheme.colors.onSurface,
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: materialTheme.colors.onSurface,
-    opacity: 0.8,
-    lineHeight: 24,
+    fontSize: 15,
+    color: materialTheme.colors.textSecondary,
+    marginTop: materialTheme.spacing.xs,
   },
-  formCard: {
+  form: {
     backgroundColor: materialTheme.colors.surface,
-    borderRadius: materialTheme.borderRadius.card,
+    borderRadius: materialTheme.borderRadius.xl,
     padding: materialTheme.spacing.lg,
-    shadowColor: materialTheme.colors.shadow,
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   inputGroup: {
     marginBottom: materialTheme.spacing.md,
   },
-  inputLabel: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: materialTheme.colors.surfaceVariant,
-    borderColor: materialTheme.colors.outline,
-    borderWidth: 1,
-    borderRadius: materialTheme.borderRadius.input,
-    paddingHorizontal: 48,
-    paddingVertical: 14,
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
-  },
   inputRow: {
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: materialTheme.colors.surfaceVariant,
+    borderRadius: materialTheme.borderRadius.input,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+    paddingHorizontal: materialTheme.spacing.md,
+    height: 52,
   },
   inputIcon: {
-    position: 'absolute',
-    left: 12,
-    top: 12,
+    marginRight: materialTheme.spacing.sm,
   },
-  primaryButton: {
-    backgroundColor: materialTheme.colors.primary,
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: materialTheme.colors.onSurface,
+  },
+  eyeBtn: {
+    padding: materialTheme.spacing.xs,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+    marginTop: materialTheme.spacing.xs,
+    marginLeft: 4,
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: materialTheme.spacing.lg,
+  },
+  forgotText: {
+    fontSize: 13,
+    color: materialTheme.colors.primary,
+    fontWeight: '600',
+  },
+  loginBtn: {
+    backgroundColor: materialTheme.colors.primaryDark,
     borderRadius: materialTheme.borderRadius.button,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: materialTheme.spacing.sm,
+    marginBottom: materialTheme.spacing.md,
   },
-  primaryButtonText: {
+  loginText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  orLabel: {
+  orText: {
     textAlign: 'center',
-    color: materialTheme.colors.onSurface,
-    opacity: 0.7,
-    marginVertical: materialTheme.spacing.md,
+    color: materialTheme.colors.textSecondary,
     fontSize: 13,
+    marginBottom: materialTheme.spacing.md,
   },
   socialRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: materialTheme.spacing.sm,
   },
-  socialButton: {
+  socialBtn: {
     flex: 1,
-    backgroundColor: materialTheme.colors.surfaceVariant,
-    borderRadius: materialTheme.borderRadius.md,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 4,
+    justifyContent: 'center',
+    backgroundColor: materialTheme.colors.surfaceVariant,
+    borderRadius: materialTheme.borderRadius.input,
     borderWidth: 1,
     borderColor: materialTheme.colors.outline,
+    paddingVertical: 14,
+    gap: materialTheme.spacing.sm,
   },
   socialText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: materialTheme.colors.onSurface,
+  },
+  socialLabel: {
     fontSize: 14,
     fontWeight: '600',
+    color: materialTheme.colors.onSurface,
   },
-  linkRow: {
+  signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: materialTheme.spacing.md,
+    marginTop: materialTheme.spacing.xl,
   },
-  linkText: {
-    color: materialTheme.colors.onSurface,
+  signupText: {
     fontSize: 14,
-    opacity: 0.75,
+    color: materialTheme.colors.textSecondary,
   },
-  linkAction: {
+  signupAction: {
+    fontSize: 14,
     color: materialTheme.colors.primary,
-    opacity: 1,
+    fontWeight: '700',
   },
 });

@@ -1,41 +1,42 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
+import { illustrations } from '../assets';
 
 const MOCK_ALERTS = [
   {
     id: '1',
     farmName: 'North Field',
-    title: 'Irrigation needed urgently',
-    description: 'Soil moisture is critically low and crops need water within 4 hours.',
-    time: '2h ago',
+    title: 'Drought risk is high',
+    description: 'Moisture level is critically low. Irrigate immediately.',
+    time: '2 hrs ago',
     severity: 'high',
+    icon: 'fire',
+    iconColor: materialTheme.colors.error,
   },
   {
     id: '2',
     farmName: 'South Field',
-    title: 'Pest activity detected',
-    description: 'Aphid clusters were observed near young rice shoots.',
-    time: '5h ago',
-    severity: 'medium',
+    title: 'NDVI improving',
+    description: 'Your crop health is improving steadily.',
+    time: '1 day ago',
+    severity: 'low',
+    icon: 'sprout',
+    iconColor: materialTheme.colors.success,
   },
   {
     id: '3',
-    farmName: 'East Orchard',
-    title: 'Rain forecast incoming',
-    description: 'Light showers expected this evening; verify drainage.',
-    time: '1d ago',
-    severity: 'low',
+    farmName: 'Weather',
+    title: 'High temperature expected',
+    description: 'over the next 3 days.',
+    time: '2 days ago',
+    severity: 'medium',
+    icon: 'sun',
+    iconColor: materialTheme.colors.warning,
   },
 ];
-
-const severityColors = {
-  high: materialTheme.colors.error,
-  medium: materialTheme.colors.tertiary,
-  low: materialTheme.colors.secondary,
-};
 
 export const AlertsFeedScreen = ({ navigation }) => {
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
@@ -43,50 +44,76 @@ export const AlertsFeedScreen = ({ navigation }) => {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 600);
+    setTimeout(() => setRefreshing(false), 600);
   }, []);
-
-  const unreadCount = alerts.length;
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.alertCard, { borderLeftColor: severityColors[item.severity] }]}
+      style={[styles.alertCard, { borderLeftColor: item.iconColor }]}
       onPress={() => navigation.navigate('InterventionDetail', { alertId: item.id })}
     >
-      <View style={styles.alertHeaderRow}>
-        <Feather name="bell" size={18} color={severityColors[item.severity]} />
-        <Text style={styles.farmName}>{item.farmName}</Text>
+      <View style={[styles.alertIconCircle, { backgroundColor: item.iconColor + '15' }]}>
+        <Feather name={item.icon} size={20} color={item.iconColor} />
       </View>
-      <Text style={styles.alertTitle}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
-      <View style={styles.cardFooter}>
-        <View style={[styles.severityPill, { backgroundColor: severityColors[item.severity] + '22' }]}> 
-          <Text style={[styles.severityText, { color: severityColors[item.severity] }]}>{item.severity.toUpperCase()}</Text>
+      <View style={styles.alertContent}>
+        <View style={styles.alertTop}>
+          <Text style={styles.alertFarmName}>{item.farmName}</Text>
+          <Text style={styles.alertTime}>{item.time}</Text>
         </View>
-        <Text style={styles.timeText}>{item.time}</Text>
+        <Text style={styles.alertTitle}>{item.title}</Text>
+        <Text style={styles.alertDesc}>{item.description}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top","bottom"]}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Text style={styles.heading}>Alerts</Text>
+        <Text style={styles.headerTitle}>Alerts</Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{unreadCount} Unread</Text>
+          <Text style={styles.badgeText}>{alerts.length} Unread Alert{alerts.length !== 1 ? 's' : ''}</Text>
         </View>
       </View>
 
-      <FlatList
-        data={alerts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={materialTheme.colors.primary} />}
-        showsVerticalScrollIndicator={false}
-      />
+      {alerts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Image source={illustrations.emptyAlerts} style={styles.emptyImage} resizeMode="contain" />
+          <Text style={styles.emptyTitle}>No alerts</Text>
+          <Text style={styles.emptyDesc}>Your farms are looking great. We'll notify you if anything needs attention.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={alerts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={materialTheme.colors.primary} />}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
+          <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Farms</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('InterventionDetail')}>
+          <Feather name="bar-chart-2" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Insights</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItemActive}>
+          <Feather name="bell" size={20} color={materialTheme.colors.primary} />
+          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>Alerts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('Settings')}>
+          <Feather name="user" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Profile</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -97,81 +124,133 @@ const styles = StyleSheet.create({
     backgroundColor: materialTheme.colors.background,
   },
   header: {
-    paddingTop: materialTheme.spacing.xl,
-    paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingVertical: materialTheme.spacing.md,
   },
-  heading: {
+  headerTitle: {
     flex: 1,
-    color: materialTheme.colors.onSurface,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
   },
   badge: {
-    backgroundColor: materialTheme.colors.primaryContainer,
-    paddingHorizontal: materialTheme.spacing.sm,
-    paddingVertical: 8,
-    borderRadius: materialTheme.borderRadius.button,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: materialTheme.borderRadius.full,
   },
   badgeText: {
-    color: materialTheme.colors.primary,
-    fontWeight: '700',
     fontSize: 12,
+    fontWeight: '700',
+    color: materialTheme.colors.error,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: materialTheme.spacing.xl,
+  },
+  emptyImage: {
+    width: 200,
+    height: 200,
+    marginBottom: materialTheme.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+    marginBottom: materialTheme.spacing.sm,
+  },
+  emptyDesc: {
+    fontSize: 14,
+    color: materialTheme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   list: {
     paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.xl,
+    paddingBottom: 100,
   },
   alertCard: {
+    flexDirection: 'row',
     backgroundColor: materialTheme.colors.surface,
     borderRadius: materialTheme.borderRadius.card,
-    padding: materialTheme.spacing.lg,
+    padding: materialTheme.spacing.md,
     marginBottom: materialTheme.spacing.md,
-    borderLeftWidth: 5,
-    shadowColor: materialTheme.colors.shadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+    borderLeftColor: undefined,
   },
-  farmName: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 6,
+  alertIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: materialTheme.spacing.md,
   },
-  alertTitle: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
+  alertContent: {
+    flex: 1,
   },
-  description: {
-    color: materialTheme.colors.onSurface,
-    opacity: 0.8,
-    lineHeight: 20,
-    marginBottom: materialTheme.spacing.md,
-  },
-  cardFooter: {
+  alertTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
   },
-  severityPill: {
-    borderRadius: materialTheme.borderRadius.chip,
-    paddingHorizontal: materialTheme.spacing.sm,
-    paddingVertical: 6,
+  alertFarmName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: materialTheme.colors.textSecondary,
   },
-  alertHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  severityText: {
+  alertTime: {
     fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+  },
+  alertTitle: {
+    fontSize: 15,
     fontWeight: '700',
-  },
-  timeText: {
     color: materialTheme.colors.onSurface,
-    opacity: 0.7,
-    fontSize: 12,
+    marginBottom: 4,
+  },
+  alertDesc: {
+    fontSize: 13,
+    color: materialTheme.colors.textSecondary,
+    lineHeight: 18,
+  },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: materialTheme.colors.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: materialTheme.spacing.sm,
+    paddingBottom: materialTheme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: materialTheme.colors.outline,
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavItemActive: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavText: {
+    fontSize: 10,
+    color: materialTheme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  bottomNavTextActive: {
+    color: materialTheme.colors.primary,
+    fontWeight: '700',
   },
 });

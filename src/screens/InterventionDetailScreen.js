@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 
 const interventionDetails = {
   action: 'Irrigate immediately',
+  description: 'Moisture level critically low',
   irrigation: '35 mm',
   cost: '₹1,200',
   risk: '₹45,000',
   confidence: 0.91,
-  improvement: '20-25%',
+  improvement: '20–25%',
   roi: '3.8x',
 };
 
@@ -17,70 +19,97 @@ export const InterventionDetailScreen = ({ navigation }) => {
   const confidencePercent = Math.round(interventionDetails.confidence * 100);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top","bottom"]}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Intervention</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.moreBtn}>
+          <Feather name="more-vertical" size={20} color={materialTheme.colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.metaRow}>
-          <View style={styles.recommendationChip}>
-            <Text style={styles.recommendationText}>AI Recommendation</Text>
+        <View style={styles.recommendationBadge}>
+          <Feather name="zap" size={14} color={materialTheme.colors.error} />
+          <Text style={styles.recommendationText}>AI Recommendation</Text>
+        </View>
+
+        <Text style={styles.actionTitle}>{interventionDetails.action}</Text>
+        <Text style={styles.actionDesc}>{interventionDetails.description}</Text>
+
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Irrigation</Text>
+            <Text style={styles.metricValue}>{interventionDetails.irrigation}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Cost</Text>
+            <Text style={styles.metricValue}>{interventionDetails.cost}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Yield Risk</Text>
+            <Text style={styles.metricValue}>{interventionDetails.risk}</Text>
           </View>
         </View>
 
-        <Text style={styles.title}>{interventionDetails.action}</Text>
-
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Irrigation', value: interventionDetails.irrigation },
-            { label: 'Cost', value: interventionDetails.cost },
-            { label: 'Yield Risk', value: interventionDetails.risk },
-          ].map((item) => (
-            <View key={item.label} style={styles.statChip}>
-              <Text style={styles.statChipLabel}>{item.label}</Text>
-              <Text style={styles.statChipValue}>{item.value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>AI Confidence</Text>
-          <View style={styles.confidenceBarBackground}>
+        <View style={styles.confidenceCard}>
+          <Text style={styles.confidenceLabel}>AI Confidence</Text>
+          <View style={styles.confidenceBarBg}>
             <View style={[styles.confidenceBarFill, { width: `${confidencePercent}%` }]} />
           </View>
-          <Text style={styles.confidencePercent}>{confidencePercent}%</Text>
+          <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
         </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionSubTitle}>Why this intervention?</Text>
-          <Text style={styles.sectionText}>
-            The system detected soil moisture below threshold and crop stress patterns on NDVI maps. Irrigation will improve plant vigor and reduce drought risk.
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Why this intervention?</Text>
+          <Text style={styles.infoCardText}>
+            Soil moisture is far below optimal range. Timely irrigation can prevent yield loss and improve crop health.
           </Text>
         </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionSubTitle}>Expected Outcome</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Expected Outcome</Text>
           <View style={styles.outcomeRow}>
-            <View>
+            <View style={styles.outcomeBlock}>
               <Text style={styles.outcomeLabel}>Yield Improvement</Text>
               <Text style={styles.outcomeValue}>{interventionDetails.improvement}</Text>
             </View>
-            <View>
+            <View style={styles.outcomeBlock}>
               <Text style={styles.outcomeLabel}>ROI</Text>
               <Text style={styles.outcomeValue}>{interventionDetails.roi}</Text>
             </View>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Apply Intervention</Text>
+        <TouchableOpacity style={styles.primaryBtn}>
+          <Text style={styles.primaryBtnText}>Apply Intervention</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Farms</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItemActive}>
+          <Feather name="bar-chart-2" size={20} color={materialTheme.colors.primary} />
+          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>Insights</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <Feather name="bell" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Alerts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('Settings')}>
+          <Feather name="user" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Profile</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -91,150 +120,201 @@ const styles = StyleSheet.create({
     backgroundColor: materialTheme.colors.background,
   },
   header: {
-    marginTop: materialTheme.spacing.sm,
-    paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingVertical: materialTheme.spacing.md,
   },
-  backText: {
-    color: materialTheme.colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: materialTheme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    color: materialTheme.colors.onSurface,
     fontSize: 18,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
   },
-  headerSpacer: {
-    width: 48,
+  moreBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: materialTheme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
   },
   content: {
     paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.xl,
+    paddingBottom: materialTheme.spacing.xxl,
   },
-  metaRow: {
+  recommendationBadge: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: materialTheme.borderRadius.full,
     marginBottom: materialTheme.spacing.md,
-  },
-  recommendationChip: {
-    backgroundColor: materialTheme.colors.error + '22',
-    paddingHorizontal: materialTheme.spacing.sm,
-    paddingVertical: 8,
-    borderRadius: materialTheme.borderRadius.chip,
+    gap: 6,
   },
   recommendationText: {
-    color: materialTheme.colors.onSurface,
-    fontWeight: '700',
     fontSize: 12,
+    fontWeight: '700',
+    color: materialTheme.colors.error,
   },
-  title: {
+  actionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
     color: materialTheme.colors.onSurface,
-    fontSize: 26,
-    fontWeight: '800',
+    marginBottom: 4,
+  },
+  actionDesc: {
+    fontSize: 15,
+    color: materialTheme.colors.textSecondary,
     marginBottom: materialTheme.spacing.lg,
   },
-  statsRow: {
+  metricsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: materialTheme.spacing.sm,
     marginBottom: materialTheme.spacing.lg,
   },
-  statChip: {
+  metricCard: {
     flex: 1,
-    marginRight: materialTheme.spacing.sm,
-    backgroundColor: materialTheme.colors.surface,
-    borderRadius: materialTheme.borderRadius.card,
-    padding: materialTheme.spacing.sm,
-    shadowColor: materialTheme.colors.shadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  statChipLabel: {
-    color: materialTheme.colors.onSurface,
-    opacity: 0.75,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  statChipValue: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sectionCard: {
     backgroundColor: materialTheme.colors.surface,
     borderRadius: materialTheme.borderRadius.card,
     padding: materialTheme.spacing.md,
-    marginBottom: materialTheme.spacing.lg,
-    shadowColor: materialTheme.colors.shadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
   },
-  sectionLabel: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 14,
+  metricLabel: {
+    fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 16,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+  },
+  confidenceCard: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.card,
+    padding: materialTheme.spacing.lg,
+    marginBottom: materialTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+  },
+  confidenceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: materialTheme.colors.onSurface,
     marginBottom: materialTheme.spacing.sm,
   },
-  confidenceBarBackground: {
-    height: 14,
+  confidenceBarBg: {
+    height: 8,
     backgroundColor: materialTheme.colors.surfaceVariant,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
     marginBottom: materialTheme.spacing.sm,
   },
   confidenceBarFill: {
     height: '100%',
     backgroundColor: materialTheme.colors.primary,
+    borderRadius: 4,
   },
-  confidencePercent: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 12,
+  confidenceValue: {
+    fontSize: 14,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
   },
-  sectionSubTitle: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
+  infoCard: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.card,
+    padding: materialTheme.spacing.lg,
+    marginBottom: materialTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+  },
+  infoCardTitle: {
+    fontSize: 15,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
     marginBottom: materialTheme.spacing.sm,
   },
-  sectionText: {
-    color: materialTheme.colors.onSurface,
-    opacity: 0.8,
-    lineHeight: 20,
+  infoCardText: {
     fontSize: 14,
+    color: materialTheme.colors.textSecondary,
+    lineHeight: 22,
   },
   outcomeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: materialTheme.spacing.lg,
+  },
+  outcomeBlock: {
+    flex: 1,
   },
   outcomeLabel: {
-    color: materialTheme.colors.onSurface,
-    opacity: 0.75,
     fontSize: 12,
-    marginBottom: 6,
+    color: materialTheme.colors.textSecondary,
+    marginBottom: 4,
   },
   outcomeValue: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
   },
-  primaryButton: {
-    backgroundColor: materialTheme.colors.primary,
-    borderRadius: materialTheme.borderRadius.md,
+  primaryBtn: {
+    backgroundColor: materialTheme.colors.primaryDark,
+    borderRadius: materialTheme.borderRadius.button,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryButtonText: {
+  primaryBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: materialTheme.colors.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: materialTheme.spacing.sm,
+    paddingBottom: materialTheme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: materialTheme.colors.outline,
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavItemActive: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavText: {
+    fontSize: 10,
+    color: materialTheme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  bottomNavTextActive: {
+    color: materialTheme.colors.primary,
     fontWeight: '700',
   },
 });

@@ -1,25 +1,81 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
 
 export const AddFieldScreen = ({ navigation }) => {
+  const [fieldName, setFieldName] = useState('');
+  const [cropType, setCropType] = useState('');
+  const [fieldArea, setFieldArea] = useState('');
+  const [soilType, setSoilType] = useState('');
+  const [location, setLocation] = useState('');
+
   return (
-    <SafeAreaView style={styles.screen} edges={["top","bottom"]}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={24} color={materialTheme.colors.primaryDark} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.title}>Add Field</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>Add New Field</Text>
+        <View style={styles.headerSpacer} />
       </View>
-      <View style={styles.card}>
-        <Text style={styles.subtitle}>Add a new field to your dashboard.</Text>
-        <Text style={styles.body}>
-          This screen is a safe placeholder for the Add Field flow and maintains app navigation without runtime errors.
-        </Text>
-      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Field Name</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., North Field"
+            placeholderTextColor={materialTheme.colors.textSecondary}
+            value={fieldName}
+            onChangeText={setFieldName}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Select Crop Type</Text>
+          <TouchableOpacity style={styles.fieldSelect}>
+            <Text style={styles.fieldSelectText}>Choose crop</Text>
+            <Feather name="chevron-down" size={18} color={materialTheme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Field Area (Acres)</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., 5.2"
+            placeholderTextColor={materialTheme.colors.textSecondary}
+            value={fieldArea}
+            onChangeText={setFieldArea}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Soil Type</Text>
+          <TouchableOpacity style={styles.fieldSelect}>
+            <Text style={styles.fieldSelectText}>Choose soil type</Text>
+            <Feather name="chevron-down" size={18} color={materialTheme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Location</Text>
+          <TouchableOpacity style={styles.fieldSelect}>
+            <View style={styles.fieldSelectLeft}>
+              <Feather name="map-pin" size={16} color={materialTheme.colors.textSecondary} />
+              <Text style={styles.fieldSelectText}>Select on map</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={materialTheme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn}>
+          <Text style={styles.saveBtnText}>Save Field</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -30,36 +86,84 @@ const styles = StyleSheet.create({
     backgroundColor: materialTheme.colors.background,
   },
   header: {
-    paddingTop: materialTheme.spacing.sm,
-    paddingHorizontal: materialTheme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: materialTheme.spacing.md,
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingVertical: materialTheme.spacing.md,
   },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    color: materialTheme.colors.onSurface,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  card: {
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: materialTheme.colors.surface,
-    margin: materialTheme.spacing.lg,
-    borderRadius: materialTheme.borderRadius.card,
-    padding: materialTheme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: materialTheme.colors.outline,
   },
-  subtitle: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
     fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  content: {
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingBottom: materialTheme.spacing.xxl,
+  },
+  fieldGroup: {
+    marginBottom: materialTheme.spacing.lg,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: materialTheme.colors.onSurface,
     marginBottom: materialTheme.spacing.sm,
   },
-  body: {
+  fieldInput: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.input,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+    paddingHorizontal: materialTheme.spacing.md,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: materialTheme.colors.onSurface,
+  },
+  fieldSelect: {
+    backgroundColor: materialTheme.colors.surface,
+    borderRadius: materialTheme.borderRadius.input,
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
+    paddingHorizontal: materialTheme.spacing.md,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  fieldSelectLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: materialTheme.spacing.sm,
+  },
+  fieldSelectText: {
+    fontSize: 15,
     color: materialTheme.colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
+  },
+  saveBtn: {
+    backgroundColor: materialTheme.colors.primaryDark,
+    borderRadius: materialTheme.borderRadius.button,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: materialTheme.spacing.md,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

@@ -22,39 +22,39 @@ export default function App() {
       <>
         <StatusBar style="dark" backgroundColor={materialTheme.colors.background} />
         <NavigationContainer
-        theme={{
-          dark: false,
-          colors: {
-            primary: materialTheme.colors.primary,
-            background: materialTheme.colors.background,
-            card: materialTheme.colors.surface,
-            text: materialTheme.colors.onSurface,
-            border: materialTheme.colors.outline,
-            notification: materialTheme.colors.error,
-          },
-        }}
-      >
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            cardStyle: { backgroundColor: materialTheme.colors.background },
-            animationEnabled: true,
+          theme={{
+            dark: false,
+            colors: {
+              primary: materialTheme.colors.primary,
+              background: materialTheme.colors.background,
+              card: materialTheme.colors.surface,
+              text: materialTheme.colors.onSurface,
+              border: materialTheme.colors.outline,
+              notification: materialTheme.colors.error,
+            },
           }}
-          initialRouteName="Onboarding"
         >
-          <Stack.Screen
-            name="Onboarding"
-            component={OnboardingScreen}
-            options={{ animationEnabled: false }}
-          />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="MyFarms" component={MyFarmsScreen} />
-          <Stack.Screen name="FarmDetail" component={FarmDetailScreen} />
-          <Stack.Screen name="AlertsFeed" component={AlertsFeedScreen} />
-          <Stack.Screen name="InterventionDetail" component={InterventionDetailScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="AddField" component={AddFieldScreen} />
-        </Stack.Navigator>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              cardStyle: { backgroundColor: materialTheme.colors.background },
+              animationEnabled: true,
+            }}
+            initialRouteName="Onboarding"
+          >
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{ animationEnabled: false }}
+            />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="MyFarms" component={MyFarmsScreen} />
+            <Stack.Screen name="FarmDetail" component={FarmDetailScreen} />
+            <Stack.Screen name="AlertsFeed" component={AlertsFeedScreen} />
+            <Stack.Screen name="InterventionDetail" component={InterventionDetailScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="AddField" component={AddFieldScreen} />
+          </Stack.Navigator>
         </NavigationContainer>
       </>
     </SafeAreaProvider>

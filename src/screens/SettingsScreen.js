@@ -1,93 +1,72 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { avatars, illustrations } from '../assets';
 
 export const SettingsScreen = ({ navigation }) => {
-  const [unitsMetric, setUnitsMetric] = useState(true);
-  const [languageEnglish, setLanguageEnglish] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const menuItems = [
+    { icon: 'home', label: 'Farm Details' },
+    { icon: 'settings', label: 'Account Settings' },
+    { icon: 'bell', label: 'Notification Settings' },
+    { icon: 'help-circle', label: 'Help & Support' },
+    { icon: 'info', label: 'About CropSentinel' },
+  ];
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top","bottom"]}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <Image source={illustrations.settingsLeaves} style={styles.decorativeLeaf} resizeMode="contain" />
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Profile</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Image source={illustrations.profileLeaves} style={styles.profileLeaves} />
-        <View style={styles.profileCard}>
-          <Image source={avatars.farmer} style={styles.avatarPlaceholder} />
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Yesh</Text>
-            <Text style={styles.profileEmail}>yesh@example.com</Text>
-          </View>
-          <Feather name="edit-2" size={18} color={materialTheme.colors.surface} />
-        </View>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.rowLabel}>Units</Text>
-              <Text style={styles.rowDetails}>{unitsMetric ? 'Metric' : 'Imperial'}</Text>
-            </View>
-            <Switch
-              value={unitsMetric}
-              onValueChange={setUnitsMetric}
-              trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.rowLabel}>Language</Text>
-              <Text style={styles.rowDetails}>{languageEnglish ? 'English' : 'Hindi'}</Text>
-            </View>
-            <Switch
-              value={languageEnglish}
-              onValueChange={setLanguageEnglish}
-              trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.rowLabel}>Dark Mode</Text>
-              <Text style={styles.rowDetails}>Material theme comes in light mode</Text>
-            </View>
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.error }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
+        <View style={styles.heroCard}>
+          <Image source={illustrations.profileLeaves} style={styles.heroLeaves} resizeMode="contain" />
+          <Image source={avatars.farmer} style={styles.avatar} resizeMode="cover" />
+          <Text style={styles.profileName}>Ramesh Kumar</Text>
+          <Text style={styles.profileEmail}>ramesh@example.com</Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: materialTheme.spacing.lg }]}>About</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.detailRow}>
-            <Text style={styles.rowLabel}>Version</Text>
-            <Text style={styles.rowDetails}>1.0.0</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.detailRow}>
-            <Text style={styles.rowLabel}>Rate the App</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.detailRow}>
-            <Text style={styles.rowLabel}>About CropSentinel</Text>
-          </TouchableOpacity>
+        <View style={styles.menuCard}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity key={item.label} style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]}>
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIconCircle}>
+                  <Feather name={item.icon} size={18} color={materialTheme.colors.primary} />
+                </View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={materialTheme.colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
+          <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Farms</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('InterventionDetail')}>
+          <Feather name="bar-chart-2" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Insights</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('AlertsFeed')}>
+          <Feather name="bell" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>Alerts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItemActive}>
+          <Feather name="user" size={20} color={materialTheme.colors.primary} />
+          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>Profile</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -97,89 +76,129 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: materialTheme.colors.background,
   },
-  header: {
-    paddingTop: materialTheme.spacing.xl,
-    paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
+  decorativeLeaf: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 140,
+    height: 140,
+    opacity: 0.12,
+    zIndex: 1,
   },
-  backText: {
-    color: materialTheme.colors.primary,
-    fontSize: 18,
-    fontWeight: '700',
+  header: {
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingVertical: materialTheme.spacing.md,
   },
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: materialTheme.colors.onSurface,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
-  },
-  headerSpacer: {
-    width: 32,
+    color: materialTheme.colors.onSurface,
   },
   content: {
-    padding: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.xl,
+    paddingHorizontal: materialTheme.spacing.lg,
+    paddingBottom: 100,
   },
-  profileCard: {
+  heroCard: {
     backgroundColor: materialTheme.colors.primary,
-    borderRadius: materialTheme.borderRadius.card,
-    padding: materialTheme.spacing.md,
-    flexDirection: 'row',
+    borderRadius: materialTheme.borderRadius.xl,
+    padding: materialTheme.spacing.xl,
     alignItems: 'center',
     marginBottom: materialTheme.spacing.lg,
+    overflow: 'hidden',
   },
-  avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: materialTheme.colors.surface,
-    marginRight: materialTheme.spacing.md,
+  heroLeaves: {
+    position: 'absolute',
+    bottom: -10,
+    right: -10,
+    width: 120,
+    height: 120,
+    opacity: 0.15,
   },
-  profileInfo: { flex: 1 },
-  profileName: { color: materialTheme.colors.surface, fontSize: 18, fontWeight: '700' },
-  profileEmail: { color: materialTheme.colors.surface, opacity: 0.9, marginTop: 4 },
-  sectionTitle: {
-    color: materialTheme.colors.onSurface,
-    fontSize: 16,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    marginBottom: materialTheme.spacing.md,
+  },
+  profileName: {
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: materialTheme.spacing.sm,
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
-  card: {
+  profileEmail: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.85,
+  },
+  menuCard: {
     backgroundColor: materialTheme.colors.surface,
-    borderRadius: materialTheme.borderRadius.lg,
-    padding: materialTheme.spacing.md,
-    shadowColor: materialTheme.colors.shadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    borderRadius: materialTheme.borderRadius.card,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: materialTheme.colors.outline,
   },
-  row: {
+  menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: materialTheme.spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: materialTheme.spacing.md,
+    paddingVertical: materialTheme.spacing.md,
   },
-  detailRow: {
-    paddingVertical: materialTheme.spacing.sm,
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: materialTheme.colors.outline,
   },
-  rowLabel: {
-    color: materialTheme.colors.onSurface,
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: materialTheme.spacing.md,
+  },
+  menuIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: materialTheme.colors.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  rowDetails: {
     color: materialTheme.colors.onSurface,
-    opacity: 0.7,
-    marginTop: 4,
-    fontSize: 13,
   },
-  divider: {
-    height: 1,
-    backgroundColor: materialTheme.colors.outline,
-    marginVertical: materialTheme.spacing.sm,
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: materialTheme.colors.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: materialTheme.spacing.sm,
+    paddingBottom: materialTheme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: materialTheme.colors.outline,
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavItemActive: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
+  bottomNavText: {
+    fontSize: 10,
+    color: materialTheme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  bottomNavTextActive: {
+    color: materialTheme.colors.primary,
+    fontWeight: '700',
   },
 });
