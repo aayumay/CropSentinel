@@ -79,5 +79,16 @@ The mobile application implements a complete user journey with the following sta
 | Bug Report Template | **PASS** | Created `BUG_REPORT_TEMPLATE.md` and compiled print-friendly `BUG_REPORT_TEMPLATE.pdf`. |
 | Ready for Team Testing | **PASS** | Codebase is fully stabilized and packages are pushed to remote origin. |
 
+## 🤖 Android Asset Compatibility Fix (D6)
+
+| Check | Status | Note |
+|---|---|---|
+| Incompatible Asset | **FIXED** | Identified `src/assets/satellite-farm.png` as actually being a JPEG format image saved under a `.png` extension, causing AAPT compiler errors during EAS builds. |
+| PNG Conversion | **PASS** | Converted `satellite-farm.png` to a standard, non-progressive PNG format using PIL. Save path updated to `src/assets/satellitefarm.png` per requirements. |
+| Dimension Verification | **PASS** | Verified that the image dimension is 1024x1024 (well under 2048x2048 limit). |
+| Code Integration | **PASS** | Updated import reference in [FarmDetailScreen.js](file:///c:/Users/Yesh%20bind/OneDrive/Desktop/Faraway/src/screens/FarmDetailScreen.js#L349) to import `satellitefarm.png`. Removed deprecated `satellite-farm.png`. |
+| Expo Doctor | **PASS** | Ran `npx expo-doctor` and confirmed all 21 checks continue to pass successfully. |
+
+
 
 
