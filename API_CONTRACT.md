@@ -7,11 +7,107 @@ Purpose: This document defines the expected frontend ↔ backend integration for
 
 ---
 
+# Backend Setup Guide
+
+This guide is intended for frontend and mobile developers who want to run the backend locally.
+
+## Clone Repository
+
+Clone the project repository to your local machine:
+```bash
+git clone https://github.com/Paramfpv/CropSentinel.git
+cd CropSentinel
+```
+
+## Create Virtual Environment
+
+Initialize a Python virtual environment in the project root:
+* **Windows**:
+  ```powershell
+  python -m venv .venv
+  ```
+* **macOS / Linux**:
+  ```bash
+  python3 -m venv .venv
+  ```
+
+## Activate Virtual Environment
+
+Activate the virtual environment to isolate package dependencies:
+* **Windows (PowerShell)**:
+  ```powershell
+  .venv\Scripts\activate
+  ```
+* **Windows (Command Prompt)**:
+  ```cmd
+  .venv\Scripts\activate.bat
+  ```
+* **macOS / Linux**:
+  ```bash
+  source .venv/bin/activate
+  ```
+
+## Install Dependencies
+
+Install the required backend packages using `pip`:
+```bash
+pip install fastapi uvicorn pydantic sqlalchemy psycopg[binary] python-dotenv
+```
+
+## Create Environment File
+
+Create your local configuration file by copying the example template:
+* **Windows (PowerShell)**:
+  ```powershell
+  copy .env.example .env
+  ```
+* **macOS / Linux / Git Bash**:
+  ```bash
+  cp .env.example .env
+  ```
+
+## Configure Neon Database
+
+Open the newly created `.env` file and set the `DATABASE_URL` key with your Neon connection string. Make sure `sslmode=require` is appended to the connection string:
+```ini
+DATABASE_URL=postgresql://[user]:[password]@[neon-hostname]/[dbname]?sslmode=require
+```
+
+## Start Backend Server
+
+Launch the local Uvicorn development server:
+```bash
+uvicorn app.main:app --reload
+```
+
+## Swagger Documentation
+
+Once the server is running, the interactive API documentation and testing UI is available at:
+* [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+# Available Endpoints
+
+Here is a list of the currently available endpoints:
+
+* **`GET /health`**: System health check to verify backend server is running.
+* **`GET /dashboard`**: Returns the primary overview data for the farm, including current health score, sensors status, and current top recommendation.
+* **`GET /ndvi-history`**: Retrieves historical NDVI values for displaying health trends in the dashboard chart.
+* **`GET /market-history`**: Retrieves historical market mandi prices for mandi price trend tracking.
+* **`GET /stress-map`**: Returns the static URL for the generated crop stress map image.
+* **`GET /alerts`**: Retrieves the history of generated and dispatched alerts.
+* **`GET /agent-status`**: Shows the processing status of each individual background agent (e.g. idle, running, completed).
+* **`POST /run-analysis`**: Triggers a manual execution run of the backend autonomous multi-agent analysis loop.
+
+---
+
 # Base URL
 
 ```http
 http://localhost:8000
 ```
+
 
 ---
 
