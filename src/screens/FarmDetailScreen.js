@@ -346,7 +346,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
 
         <View style={styles.mapCard}>
           <Image
-            source={require('../assets/satellite-farm.png')}
+            source={require('../assets/satellitefarm.png')}
             style={styles.mapImage}
             resizeMode="cover"
           />
