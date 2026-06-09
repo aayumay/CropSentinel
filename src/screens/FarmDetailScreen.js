@@ -12,6 +12,7 @@ import { ErrorState } from '../components/ErrorState';
 import { useDemoState } from '../config/demoState';
 import { DemoBanner } from '../components/DemoBanner';
 import { scheduleLocalAlert } from '../services/notifications';
+import { translations } from '../constants/translations';
 
 
 
@@ -151,7 +152,8 @@ const SvgSparkline = ({ data, labels, color, fallbackText, formatValue }) => {
 
 
 export const FarmDetailScreen = ({ navigation, route }) => {
-  const { isDemoMode, isDroughtSimulated, setDroughtSimulated } = useDemoState();
+  const { isDemoMode, isDroughtSimulated, setDroughtSimulated, language } = useDemoState();
+  const t = translations[language] || translations.en;
   const [dashboardData, setDashboardData] = useState(null);
   const [ndviData, setNdviData] = useState([]);
   const [marketData, setMarketData] = useState([]);
@@ -420,23 +422,23 @@ export const FarmDetailScreen = ({ navigation, route }) => {
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
           <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>Home</Text>
+          <Text style={styles.bottomNavText}>{t.home}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItemActive}>
+        <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => navigation.navigate('MyFarms')}>
           <Feather name="layers" size={20} color={materialTheme.colors.primary} />
-          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>Farms</Text>
+          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>{t.farms}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('InterventionDetail')}>
           <Feather name="bar-chart-2" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>Insights</Text>
+          <Text style={styles.bottomNavText}>{t.insights}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('AlertsFeed')}>
           <Feather name="bell" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>Alerts</Text>
+          <Text style={styles.bottomNavText}>{t.alerts}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('Settings')}>
           <Feather name="user" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>Profile</Text>
+          <Text style={styles.bottomNavText}>{t.profile}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

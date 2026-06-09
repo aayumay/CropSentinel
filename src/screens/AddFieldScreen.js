@@ -114,6 +114,7 @@ export const AddFieldScreen = ({ navigation, route }) => {
             onChangeText={setFieldName}
             autoCorrect={false}
             autoCapitalize="words"
+            editable={true}
           />
         </View>
 
@@ -134,6 +135,7 @@ export const AddFieldScreen = ({ navigation, route }) => {
             value={fieldArea}
             onChangeText={setFieldArea}
             keyboardType="numeric"
+            editable={true}
           />
         </View>
 

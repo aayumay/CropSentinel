@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { illustrations } from '../assets';
@@ -87,7 +87,7 @@ export const LoginScreen = ({ navigation }) => {
               <Text style={styles.socialLabel}>Google</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialPress("Apple")}>
-              <Feather name="apple" size={16} color={materialTheme.colors.onSurface} />
+              <FontAwesome name="apple" size={16} color={materialTheme.colors.onSurface} />
               <Text style={styles.socialLabel}>Apple</Text>
             </TouchableOpacity>
           </View>
