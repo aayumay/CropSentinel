@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "Faraway",
+    "name": "CropSentinel",
     "slug": "faraway",
     "version": "1.0.0",
+    "icon": "./src/assets/icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -14,7 +15,16 @@
           "initialOrientation": "DEFAULT"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./src/assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }

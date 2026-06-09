@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
@@ -7,8 +7,37 @@ import { illustrations } from '../assets';
 import { fetchAlerts } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { useDemoState } from '../config/demoState';
+
+const FadeInCard = ({ children, delay = 0 }) => {
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 500,
+      delay,
+      useNativeDriver: true,
+    }).start();
+  }, [animatedValue, delay]);
+
+  const animatedStyle = {
+    opacity: animatedValue,
+    transform: [
+      {
+        translateY: animatedValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [15, 0],
+        }),
+      },
+    ],
+  };
+
+  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+};
 
 export const AlertsFeedScreen = ({ navigation }) => {
+  const { isDemoMode, isDroughtSimulated } = useDemoState();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -81,7 +110,7 @@ export const AlertsFeedScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadAlerts();
-  }, []);
+  }, [isDemoMode, isDroughtSimulated]);
 
   const onRefresh = useCallback(() => {
     loadAlerts(true);
@@ -110,23 +139,25 @@ export const AlertsFeedScreen = ({ navigation }) => {
   }
 
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.alertCard, { borderLeftColor: item.iconColor }]}
-      onPress={() => navigation.navigate('InterventionDetail', { alertId: item.id })}
-    >
-      <View style={[styles.alertIconCircle, { backgroundColor: item.iconColor + '15' }]}>
-        <MaterialCommunityIcons name={item.icon} size={20} color={item.iconColor} />
-      </View>
-      <View style={styles.alertContent}>
-        <View style={styles.alertTop}>
-          <Text style={styles.alertFarmName}>{item.farmName}</Text>
-          <Text style={styles.alertTime}>{item.time}</Text>
+  const renderItem = ({ item, index }) => (
+    <FadeInCard delay={index * 120}>
+      <TouchableOpacity
+        style={[styles.alertCard, { borderLeftColor: item.iconColor }]}
+        onPress={() => navigation.navigate('InterventionDetail', { alertId: item.id })}
+      >
+        <View style={[styles.alertIconCircle, { backgroundColor: item.iconColor + '15' }]}>
+          <MaterialCommunityIcons name={item.icon} size={20} color={item.iconColor} />
         </View>
-        <Text style={styles.alertTitle}>{item.title}</Text>
-        <Text style={styles.alertDesc}>{item.description}</Text>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.alertContent}>
+          <View style={styles.alertTop}>
+            <Text style={styles.alertFarmName}>{item.farmName}</Text>
+            <Text style={styles.alertTime}>{item.time}</Text>
+          </View>
+          <Text style={styles.alertTitle}>{item.title}</Text>
+          <Text style={styles.alertDesc}>{item.description}</Text>
+        </View>
+      </TouchableOpacity>
+    </FadeInCard>
   );
 
   return (

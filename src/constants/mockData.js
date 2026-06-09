@@ -49,11 +49,11 @@ export const MOCK_FARMS = [
 
 export const MOCK_INTERVENTION = {
   farm_id: 'farm_003',
-  action: 'Irrigate within 24 hours — critical moisture deficit',
-  irrigation_mm: 45,
-  cost_inr: 1400,
-  risk_inr: 52000,
-  confidence: 0.94,
+  action: 'Increase irrigation within 48 hours.',
+  irrigation_mm: 35,
+  cost_inr: 1200,
+  risk_inr: 45000,
+  confidence: 0.91,
 };
 
 export const MOCK_NDVI = {

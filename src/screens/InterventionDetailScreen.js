@@ -7,12 +7,52 @@ import { fetchDashboard, getIntervention } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { scheduleLocalAlert } from '../services/notifications';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import { useDemoState } from '../config/demoState';
+import { DemoBanner } from '../components/DemoBanner';
 
 export const InterventionDetailScreen = ({ navigation }) => {
+  const { isDemoMode, isDroughtSimulated, applyIntervention } = useDemoState();
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  const confidenceProgress = useSharedValue(0);
+
+  const [successVisible, setSuccessVisible] = useState(false);
+  const successScale = useSharedValue(0);
+  const successOpacity = useSharedValue(0);
+
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${confidenceProgress.value * 100}%`,
+    };
+  });
+
+  const successOverlayStyle = useAnimatedStyle(() => {
+    return {
+      opacity: successOpacity.value,
+      transform: [{ scale: successScale.value }],
+    };
+  });
+
+  const showSuccess = () => {
+    setSuccessVisible(true);
+    successScale.value = 0;
+    successOpacity.value = 0;
+    
+    successOpacity.value = withTiming(1, { duration: 300 });
+    successScale.value = withSpring(1, { damping: 12 });
+
+    setTimeout(() => {
+      successOpacity.value = withTiming(0, { duration: 250 });
+      successScale.value = withTiming(0.8, { duration: 250 });
+      setTimeout(() => {
+        setSuccessVisible(false);
+      }, 250);
+    }, 2200);
+  };
 
   const loadIntervention = async (isRefreshing = false) => {
     if (isRefreshing) {
@@ -32,7 +72,7 @@ export const InterventionDetailScreen = ({ navigation }) => {
           irrigation: '35 mm',
           cost: rec.estimated_cost !== undefined ? `₹${rec.estimated_cost.toLocaleString()}` : '₹340',
           risk: rec.yield_loss_risk !== undefined ? `₹${rec.yield_loss_risk.toLocaleString()}` : '₹18,000',
-          confidence: 0.91,
+          confidence: rec.confidence ? rec.confidence / 100 : 0.91,
           improvement: '20–25%',
           roi: '3.8x',
         });
@@ -66,7 +106,14 @@ export const InterventionDetailScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadIntervention();
-  }, []);
+  }, [isDemoMode, isDroughtSimulated]);
+
+  useEffect(() => {
+    if (details) {
+      confidenceProgress.value = 0;
+      confidenceProgress.value = withTiming(details.confidence, { duration: 1000 });
+    }
+  }, [details]);
 
   const onRefresh = useCallback(() => {
     loadIntervention(true);
@@ -104,6 +151,7 @@ export const InterventionDetailScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <DemoBanner />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
@@ -152,7 +200,7 @@ export const InterventionDetailScreen = ({ navigation }) => {
           <View style={styles.confidenceCard}>
             <Text style={styles.confidenceLabel}>AI Confidence</Text>
             <View style={styles.confidenceBarBg}>
-              <View style={[styles.confidenceBarFill, { width: `${confidencePercent}%` }]} />
+              <Animated.View style={[styles.confidenceBarFill, animatedProgressStyle]} />
             </View>
             <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
           </View>
@@ -181,15 +229,14 @@ export const InterventionDetailScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.primaryBtn}
             onPress={async () => {
+              if (isDemoMode) {
+                applyIntervention(3); // Sugarcane farm
+              }
               await scheduleLocalAlert(
                 "CropSentinel Alert",
                 "Intervention applied successfully. Continue monitoring your farm."
               );
-              Alert.alert(
-                "Success",
-                "Intervention applied successfully! Continue monitoring your farm.",
-                [{ text: "OK" }]
-              );
+              showSuccess();
             }}
           >
             <Text style={styles.primaryBtnText}>Apply Intervention</Text>
@@ -199,6 +246,18 @@ export const InterventionDetailScreen = ({ navigation }) => {
         <View style={styles.loaderContainer}>
           <Text style={styles.loadingText}>No details found.</Text>
         </View>
+      )}
+
+      {successVisible && (
+        <Animated.View style={[styles.successOverlay, successOverlayStyle]}>
+          <View style={styles.successModal}>
+            <View style={styles.successIconCircle}>
+              <Feather name="check" size={48} color="#FFFFFF" />
+            </View>
+            <Text style={styles.successTitle}>Success</Text>
+            <Text style={styles.successMessage}>Intervention recorded successfully.</Text>
+          </View>
+        </Animated.View>
       )}
 
       {/* Bottom Nav Bar */}
@@ -441,5 +500,45 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: materialTheme.colors.primary,
     fontWeight: '700',
+  },
+  successOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+  successModal: {
+    width: 280,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  successIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  successMessage: {
+    fontSize: 14,
+    color: '#7A7A7A',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

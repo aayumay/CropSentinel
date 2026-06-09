@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,35 @@ import { USE_MOCK_DATA } from '../config/environment';
 import { fetchDashboard, fetchAgentStatus } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { useDemoState } from '../config/demoState';
+import { DemoBanner } from '../components/DemoBanner';
+
+const FadeInCard = ({ children, delay = 0 }) => {
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 500,
+      delay,
+      useNativeDriver: true,
+    }).start();
+  }, [animatedValue, delay]);
+
+  const animatedStyle = {
+    opacity: animatedValue,
+    transform: [
+      {
+        translateY: animatedValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [15, 0],
+        }),
+      },
+    ],
+  };
+
+  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+};
 
 const WEATHER = [
   { icon: 'sun', value: '31°C', label: 'Temp' },
@@ -71,6 +100,7 @@ const SkeletonCard = () => (
 );
 
 export const MyFarmsScreen = ({ navigation }) => {
+  const { isDemoMode, isDroughtSimulated } = useDemoState();
   const [farms, setFarms] = useState([]);
   const [summary, setSummary] = useState(null);
   const [agents, setAgents] = useState([]);
@@ -174,7 +204,7 @@ export const MyFarmsScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [isDemoMode, isDroughtSimulated]);
 
   if (loading && !refreshing && farms.length === 0) {
     return <LoadingState message="Fetching farm data..." />;
@@ -193,6 +223,7 @@ export const MyFarmsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <DemoBanner />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -301,50 +332,50 @@ export const MyFarmsScreen = ({ navigation }) => {
               </Text>
             </View>
 
-            {/* Farms List */}
             <View style={styles.farmsContainer}>
-              {farms.map((item) => {
+              {farms.map((item, index) => {
                 const riskBadge = getRiskBadgeStyle(item.riskSeverity);
                 return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.farmCard}
-                    onPress={() => navigation.navigate('FarmDetail', { farm: item })}
-                  >
-                    <View style={styles.farmCardLeft}>
-                      <Image
-                        source={crops[(item.cropType || '').toLowerCase()] || crops.default}
-                        style={styles.farmCropImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <View style={styles.farmCardCenter}>
-                      <Text style={styles.farmName}>{item.name}</Text>
-                      <Text style={styles.farmCropType}>{item.cropType}</Text>
-                      <View style={[styles.riskBadge, { backgroundColor: riskBadge.backgroundColor }]}>
-                        <Text style={[styles.riskBadgeText, { color: riskBadge.color }]}>
-                          {getRiskLabel(item.riskSeverity)}
-                        </Text>
+                  <FadeInCard key={item.id} delay={index * 150}>
+                    <TouchableOpacity
+                      style={styles.farmCard}
+                      onPress={() => navigation.navigate('FarmDetail', { farm: item })}
+                    >
+                      <View style={styles.farmCardLeft}>
+                        <Image
+                          source={crops[(item.cropType || '').toLowerCase()] || crops.default}
+                          style={styles.farmCropImage}
+                          resizeMode="contain"
+                        />
                       </View>
-                      <View style={styles.farmStats}>
-                        <View style={styles.farmStat}>
-                          <Text style={styles.farmStatLabel}>NDVI</Text>
-                          <Text style={styles.farmStatValue}>{item.ndvi}</Text>
+                      <View style={styles.farmCardCenter}>
+                        <Text style={styles.farmName}>{item.name}</Text>
+                        <Text style={styles.farmCropType}>{item.cropType}</Text>
+                        <View style={[styles.riskBadge, { backgroundColor: riskBadge.backgroundColor }]}>
+                          <Text style={[styles.riskBadgeText, { color: riskBadge.color }]}>
+                            {getRiskLabel(item.riskSeverity)}
+                          </Text>
                         </View>
-                        <View style={styles.farmStatDivider} />
-                        <View style={styles.farmStat}>
-                          <Text style={styles.farmStatLabel}>Moisture</Text>
-                          <Text style={styles.farmStatValue}>{item.moisture}</Text>
+                        <View style={styles.farmStats}>
+                          <View style={styles.farmStat}>
+                            <Text style={styles.farmStatLabel}>NDVI</Text>
+                            <Text style={styles.farmStatValue}>{item.ndvi}</Text>
+                          </View>
+                          <View style={styles.farmStatDivider} />
+                          <View style={styles.farmStat}>
+                            <Text style={styles.farmStatLabel}>Moisture</Text>
+                            <Text style={styles.farmStatValue}>{item.moisture}</Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                    <View style={styles.farmCardRight}>
-                      <View style={[styles.healthCircle, { borderColor: getHealthColor(item.healthScore) }]}>
-                        <Text style={styles.healthScore}>{item.healthScore}</Text>
-                        <Text style={styles.healthLabel}>/100</Text>
+                      <View style={styles.farmCardRight}>
+                        <View style={[styles.healthCircle, { borderColor: getHealthColor(item.healthScore) }]}>
+                          <Text style={styles.healthScore}>{item.healthScore}</Text>
+                          <Text style={styles.healthLabel}>/100</Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                  </FadeInCard>
                 );
               })}
             </View>

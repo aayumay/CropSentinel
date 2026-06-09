@@ -1,4 +1,5 @@
 import { MOCK_ALERTS, MOCK_NDVI, MOCK_INTERVENTION } from '../constants/mockData';
+import { demoState } from '../config/demoState';
 
 // Delay helper to simulate network latency
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -23,6 +24,7 @@ export const DEMO_FARMS = [
       action: 'Continue current irrigation schedule',
       estimated_cost: 0,
       yield_loss_risk: 0,
+      confidence: 95,
     },
   },
   {
@@ -40,6 +42,7 @@ export const DEMO_FARMS = [
       action: 'Increase irrigation by 20% over next 5 days',
       estimated_cost: 520,
       yield_loss_risk: 9500,
+      confidence: 85,
     },
   },
   {
@@ -52,22 +55,47 @@ export const DEMO_FARMS = [
     soil_moisture: 11,
     market_risk: 0.61,
     zone_type: 'drought',
-    status: 'Severe drought stress — immediate irrigation required to prevent yield loss.',
+    status: 'Critical drought stress detected.',
     recommendation: {
-      action: 'Irrigate within 24 hours — critical moisture deficit',
-      estimated_cost: 1400,
-      yield_loss_risk: 52000,
+      action: 'Increase irrigation within 48 hours.',
+      estimated_cost: 1200,
+      yield_loss_risk: 45000,
+      confidence: 91,
     },
   },
 ];
 
-// Active demo farm index (0 = healthy, 1 = moderate, 2 = high-risk)
-// For hackathon demo: cycle through farms or start with high-risk for impact
-const ACTIVE_FARM_INDEX = 2;
-
 export const fetchDashboard = async () => {
   await delay(600);
-  const farm = DEMO_FARMS[ACTIVE_FARM_INDEX];
+  const ds = demoState.get();
+
+  // If in Demo Mode but drought has NOT been simulated yet, we show a healthy/stable sugarcane farm.
+  if (ds.isDemoMode && !ds.isDroughtSimulated) {
+    return {
+      farm: {
+        id: 3,
+        name: 'Marathwada Sugarcane Farm',
+        crop_type: 'sugarcane',
+      },
+      farm_health_score: 78,
+      ndvi: 0.65,
+      weather_risk: 0.25,
+      soil_moisture: 48,
+      market_risk: 0.30,
+      zone_type: 'healthy',
+      last_updated: new Date().toISOString(),
+      status: 'Crop health stable — optimal moisture levels.',
+      recommendation: {
+        action: 'Continue standard irrigation',
+        estimated_cost: 0,
+        yield_loss_risk: 0,
+        confidence: 95,
+      },
+    };
+  }
+
+  // Otherwise (Demo Mode with drought simulated, or standard/default mode), show the critical drought state.
+  const farm = DEMO_FARMS[2]; // Marathwada Sugarcane Farm
   return {
     farm: {
       id: farm.id,
@@ -80,25 +108,51 @@ export const fetchDashboard = async () => {
     soil_moisture: farm.soil_moisture,
     market_risk: farm.market_risk,
     last_updated: new Date().toISOString(),
+    status: farm.status,
     recommendation: farm.recommendation,
   };
 };
 
 export const fetchAlerts = async () => {
   await delay(600);
-  return [
-    {
-      id: 1,
-      message: 'Irrigate within 24 hours — critical moisture deficit',
-      timestamp: new Date().toISOString(),
-      status: 'sent',
-    },
+  const ds = demoState.get();
+
+  // Custom alert messages list
+  const defaultAlerts = [
     {
       id: 2,
       message: 'Increase irrigation by 20% over next 5 days',
       timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       status: 'sent',
+    }
+  ];
+
+  if (ds.isDemoMode) {
+    if (ds.isDroughtSimulated) {
+      return [
+        {
+          id: 100,
+          message: 'Critical drought stress detected.',
+          timestamp: new Date().toISOString(),
+          status: 'sent',
+        },
+        ...defaultAlerts,
+        ...ds.extraAlerts
+      ];
+    } else {
+      return defaultAlerts;
+    }
+  }
+
+  // Default mode
+  return [
+    {
+      id: 1,
+      message: 'Critical drought stress detected.',
+      timestamp: new Date().toISOString(),
+      status: 'sent',
     },
+    ...defaultAlerts
   ];
 };
 
@@ -125,14 +179,69 @@ export const runAnalysis = async () => {
 export const getDashboard = fetchDashboard;
 export const getAlerts = fetchAlerts;
 export const getAgentStatus = fetchAgentStatus;
+
 export const getIntervention = async () => {
   await delay(500);
-  return MOCK_INTERVENTION;
+  const ds = demoState.get();
+
+  if (ds.isDemoMode && !ds.isDroughtSimulated) {
+    return {
+      farm_id: 'farm_003',
+      action: 'Continue standard irrigation',
+      irrigation_mm: 0,
+      cost_inr: 0,
+      risk_inr: 0,
+      confidence: 0.95,
+    };
+  }
+
+  return {
+    farm_id: 'farm_003',
+    action: 'Increase irrigation within 48 hours.',
+    irrigation_mm: 35,
+    cost_inr: 1200,
+    risk_inr: 45000,
+    confidence: 0.91,
+  };
 };
+
 export const getNdviHistory = async () => {
   await delay(500);
-  return MOCK_NDVI;
+  const ds = demoState.get();
+
+  if (ds.isDemoMode && !ds.isDroughtSimulated) {
+    return {
+      farm_id: 'farm_003',
+      health_score: 78,
+      zone_type: 'healthy',
+      trend: [
+        { day: 'Mon', value: 0.62 },
+        { day: 'Tue', value: 0.63 },
+        { day: 'Wed', value: 0.64 },
+        { day: 'Thu', value: 0.65 },
+        { day: 'Fri', value: 0.65 },
+        { day: 'Sat', value: 0.66 },
+        { day: 'Sun', value: 0.65 },
+      ],
+    };
+  }
+
+  return {
+    farm_id: 'farm_003',
+    health_score: 41,
+    zone_type: 'drought',
+    trend: [
+      { day: 'Mon', value: 0.55 },
+      { day: 'Tue', value: 0.48 },
+      { day: 'Wed', value: 0.40 },
+      { day: 'Thu', value: 0.32 },
+      { day: 'Fri', value: 0.28 },
+      { day: 'Sat', value: 0.24 },
+      { day: 'Sun', value: 0.22 },
+    ],
+  };
 };
+
 export const getMarketHistory = async () => {
   await delay(500);
   return [

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Polyline, Circle, Line as SvgLine, Text as SvgText } from 'react-native-svg';
@@ -9,6 +9,9 @@ import { crops } from '../assets';
 import { fetchDashboard, getNdviHistory, getMarketHistory } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { useDemoState } from '../config/demoState';
+import { DemoBanner } from '../components/DemoBanner';
+import { scheduleLocalAlert } from '../services/notifications';
 
 
 
@@ -16,6 +19,42 @@ const getHealthColor = (score) => {
   if (score >= 80) return materialTheme.colors.success;
   if (score >= 60) return materialTheme.colors.warning;
   return materialTheme.colors.error;
+};
+
+// Smooth numeric updates component for health score
+const AnimatedNumber = ({ value }) => {
+  const [displayVal, setDisplayVal] = useState(value);
+  
+  useEffect(() => {
+    let start = displayVal;
+    const end = value;
+    if (start === end) return;
+    
+    const duration = 800; // 800ms
+    const diff = Math.abs(end - start);
+    const stepTime = Math.max(Math.floor(duration / diff), 16);
+    
+    let timer = setInterval(() => {
+      if (start < end) {
+        start += 1;
+        if (start >= end) {
+          start = end;
+          clearInterval(timer);
+        }
+      } else {
+        start -= 1;
+        if (start <= end) {
+          start = end;
+          clearInterval(timer);
+        }
+      }
+      setDisplayVal(start);
+    }, stepTime);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <Text style={styles.healthScore}>{displayVal}</Text>;
 };
 
 // Pure SVG sparkline chart — zero gesture-handler/reanimated dependency
@@ -112,6 +151,7 @@ const SvgSparkline = ({ data, labels, color, fallbackText, formatValue }) => {
 
 
 export const FarmDetailScreen = ({ navigation, route }) => {
+  const { isDemoMode, isDroughtSimulated, setDroughtSimulated } = useDemoState();
   const [dashboardData, setDashboardData] = useState(null);
   const [ndviData, setNdviData] = useState([]);
   const [marketData, setMarketData] = useState([]);
@@ -147,7 +187,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [isDemoMode, isDroughtSimulated]);
 
   const farmFromRoute = route.params?.farm || {
     id: 1,
@@ -234,6 +274,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <DemoBanner />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
@@ -267,7 +308,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         <View style={styles.healthCard}>
           <Text style={styles.healthCardLabel}>Health Score</Text>
           <View style={[styles.healthCircle, { borderColor: getHealthColor(farmData.healthScore) }]}>
-            <Text style={styles.healthScore}>{farmData.healthScore}</Text>
+            <AnimatedNumber value={farmData.healthScore} />
             <Text style={styles.healthDivider}>/100</Text>
           </View>
           <View style={[styles.zoneChip, { backgroundColor: getZoneChipStyle(zoneType).backgroundColor }]}>
@@ -348,6 +389,28 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             />
           </View>
         </View>
+
+        {isDemoMode && (
+          <TouchableOpacity 
+            style={[styles.simulateBtn, isDroughtSimulated && styles.simulateBtnDisabled]} 
+            onPress={async () => {
+              setDroughtSimulated(true);
+              await scheduleLocalAlert(
+                "CropSentinel Alert",
+                "Critical drought stress detected at Marathwada Sugarcane Farm. Immediate intervention recommended."
+              );
+              Alert.alert(
+                "Simulation Event Triggered",
+                "Drought simulation successfully triggered on Marathwada Sugarcane Farm. Visual conditions, NDVI charts, and alert status are updated.",
+                [{ text: "OK" }]
+              );
+            }}
+          >
+            <Text style={styles.simulateBtnText}>
+              {isDroughtSimulated ? "Drought Simulated" : "Simulate Drought"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate('InterventionDetail', { farmId: farmData.id })}>
           <Text style={styles.primaryBtnText}>View Intervention</Text>
@@ -668,5 +731,20 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 40,
+  },
+  simulateBtn: {
+    backgroundColor: '#F59E0B',
+    borderRadius: materialTheme.borderRadius.button,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: materialTheme.spacing.md,
+  },
+  simulateBtnDisabled: {
+    backgroundColor: '#E5E5E0',
+  },
+  simulateBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

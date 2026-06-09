@@ -22,5 +22,5 @@
   - [x] SVG-based market trend charts
   - [x] Notification settings toggle
   - [x] Expo SDK 56 compatibility
-- [ ] D5: Demo Mode & Branding
+- [x] D5: Demo Mode & Branding
 - [ ] D6: Backend Integration & Release

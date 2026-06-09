@@ -5,9 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
 import { avatars, illustrations } from '../assets';
 import { registerForPushNotificationsAsync } from '../services/notifications';
+import { useDemoState } from '../config/demoState';
 
 export const SettingsScreen = ({ navigation }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { isDemoMode, setDemoMode, setDroughtSimulated } = useDemoState();
+
 
   const handleToggleNotifications = async (value) => {
     setNotificationsEnabled(value);
@@ -71,6 +74,35 @@ export const SettingsScreen = ({ navigation }) => {
               onValueChange={handleToggleNotifications}
               trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.primary }}
               thumbColor={notificationsEnabled ? '#FFFFFF' : '#F4F3F0'}
+            />
+          </View>
+        </View>
+
+        <View style={[styles.menuCard, { marginTop: materialTheme.spacing.md }]}>
+          <View style={styles.demoHeaderContainer}>
+            <Text style={styles.demoTitle}>Demo Mode</Text>
+            <Text style={styles.demoDescription}>Enable a guided hackathon demonstration experience.</Text>
+          </View>
+          <View style={styles.preferenceItem}>
+            <View style={styles.menuLeft}>
+              <View style={styles.menuIconCircle}>
+                <Feather name="play" size={18} color={materialTheme.colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.menuLabel}>Enable Demo Scenario</Text>
+                <Text style={styles.preferenceSublabel}>Toggles hackathon simulation mode</Text>
+              </View>
+            </View>
+            <Switch
+              value={isDemoMode}
+              onValueChange={(value) => {
+                setDemoMode(value);
+                if (!value) {
+                  setDroughtSimulated(false);
+                }
+              }}
+              trackColor={{ false: materialTheme.colors.outline, true: materialTheme.colors.primary }}
+              thumbColor={isDemoMode ? '#FFFFFF' : '#F4F3F0'}
             />
           </View>
         </View>
@@ -252,5 +284,21 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     marginTop: 2,
     fontWeight: '500',
+  },
+  demoHeaderContainer: {
+    paddingHorizontal: materialTheme.spacing.md,
+    paddingTop: materialTheme.spacing.md,
+    paddingBottom: 4,
+  },
+  demoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: materialTheme.colors.onSurface,
+  },
+  demoDescription: {
+    fontSize: 12,
+    color: materialTheme.colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
   },
 });

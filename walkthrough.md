@@ -35,3 +35,19 @@ The mobile application implements a complete user journey with the following sta
 * **Local Notifications**: Implemented Expo Go compatible local notification scheduling in `src/services/notifications.js`.
 * **Push Toggle Settings**: Integrated notification settings switch in Settings screen allowing users to toggle notification handling and trigger permission request flows.
 * **Expo SDK 56**: Validated configuration parameters in `package.json` and `app.json` for Expo SDK 56.
+
+## 🚀 Demo Mode, Simulation & Polish (D5)
+
+* **Demo Mode settings section**: Added a dedicated "Demo Mode" header and description card under Profile Settings, with a toggle to switch the global `isDemoMode` state.
+* **Lightweight Global State Subscription**: Built a zero-dependency subscription store in `src/config/demoState.js` to manage the demo simulation variables (`isDemoMode`, `isDroughtSimulated`) and sync views dynamically.
+* **Simulate Drought Flow**: Visible on `FarmDetailScreen` when Demo Mode is active. Tapping it triggers a visual transition from healthy/moderate sugarcane conditions (health: 78, NDVI: 0.65) to critical drought status (health: 41, NDVI: 0.22).
+* **Animated Success & Confirmation Feedback**: Tapping "Apply Intervention" scales in a checkmark feedback animation modal saying "Intervention recorded successfully.", schedules a local notification, and updates demo state tracking.
+* **Premium Reanimated Transitions**:
+  * Added slide-down Reanimated entrance for the Demo Mode banner.
+  * Added staggered fade-in + vertical translation animations (`FadeInCard`) for `MyFarmsScreen` cards and `AlertsFeedScreen` alerts using standard React Native `Animated`.
+  * Added auto-animated progress bar for AI confidence scale in `InterventionDetailScreen`.
+  * Added smooth visual counting numeric transition for `FarmDetailScreen` health scores.
+* **CropSentinel Branding**:
+  * Generated and configured premium PNG assets for `icon.png` (Agritech logo) and `splash.png` (constellation/agricultural scan view).
+  * Upgraded `app.json` configuration utilizing the Expo-supported `expo-splash-screen` plugin.
+
