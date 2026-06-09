@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Settings2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useI18n } from '../I18nContext';
+import toast from 'react-hot-toast';
 
 export default function InterventionScreen({ onNavigate }) {
   const { t } = useI18n();
@@ -106,7 +107,7 @@ export default function InterventionScreen({ onNavigate }) {
 
         {/* Apply button */}
         <button
-          onClick={() => { alert('Intervention applied!'); onNavigate('farm_detail'); }}
+          onClick={() => { toast.success('Intervention applied!'); onNavigate('farm_detail'); }}
           style={{ width:'100%', background:'var(--cs-accent)', color:'#FFFFFF', fontWeight:800, fontSize:15, padding:'16px', borderRadius:18, border:'none', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,124,89,0.35)', fontFamily:'inherit', letterSpacing:'0.1px', marginTop:4, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           <CheckCircle size={18} /> Apply Intervention
         </button>

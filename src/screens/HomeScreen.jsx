@@ -117,12 +117,18 @@ export default function HomeScreen({ onNavigate }) {
     <div className="dashboard-container" style={{ background:'var(--cs-bg)', minHeight:'100%', paddingBottom:24 }}>
 
       {/* Header */}
-      <div style={{ padding:'24px 20px 12px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+      <div style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 20px)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 20px)',
+        paddingBottom: '16px',
+        display:'flex', justifyContent:'space-between', alignItems:'flex-start'
+      }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0, lineHeight:1.2 }}>
-            Good Morning,<br />Farmer 🌿
+            {t('good_morning')}<br />{t('farmer')}
           </h1>
-          <p style={{ fontSize:11, color:'var(--cs-text-muted)', fontWeight:500, margin:'4px 0 0' }}>Here's what's happening on your farms</p>
+          <p style={{ fontSize:11, color:'var(--cs-text-muted)', fontWeight:500, margin:'4px 0 0' }}>{t('heres_whats')}</p>
         </div>
         <button
           onClick={() => onNavigate('alerts')}
@@ -155,50 +161,50 @@ export default function HomeScreen({ onNavigate }) {
         boxShadow:'0 1px 6px var(--cs-shadow)',
         border:'1px solid var(--cs-border-soft)',
       }}>
-        <WeatherBadge icon={Thermometer} value="31°C"    label="Temp"        color="#EF4444" />
-        <WeatherBadge icon={Droplets}    value="56%"     label="Humidity"    color="#60A5FA" />
-        <WeatherBadge icon={Cloud}       value="10%"     label="Rain Chance" color="#93C5FD" />
-        <WeatherBadge icon={Wind}        value="18 km/h" label="Wind"        color="#6EE7B7" />
+        <WeatherBadge icon={Thermometer} value="31°C"    label={t('temp')}        color="#EF4444" />
+        <WeatherBadge icon={Droplets}    value="56%"     label={t('humidity')}    color="#60A5FA" />
+        <WeatherBadge icon={Cloud}       value="10%"     label={t('rain_chance')} color="#93C5FD" />
+        <WeatherBadge icon={Wind}        value="18 km/h" label={t('wind')}        color="#6EE7B7" />
       </div>
 
       {/* My Farms */}
       <div style={{ padding:'0 20px' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div>
-            <h2 style={{ fontSize:16, fontWeight:700, color:'var(--cs-text)', margin:0 }}>My Farms</h2>
-            <p style={{ fontSize:11, fontWeight:700, color:'#DC2626', margin:'2px 0 0' }}>2 Farms • 1 Alert</p>
+            <h2 style={{ fontSize:16, fontWeight:700, color:'var(--cs-text)', margin:0 }}>{t('my_farms')}</h2>
+            <p style={{ fontSize:11, fontWeight:700, color:'#DC2626', margin:'2px 0 0' }}>{t('farms_alert').replace('{n}', 2).replace('{a}', 1)}</p>
           </div>
         </div>
 
         <div className="desktop-grid-large">
           <FarmCard
             cropImg={wheatImg}
-            name="North Field"
-            crop="Wheat"
-            badge="Drought Risk"
-            badgeBg="#FEE2E2"
-            badgeColor="#DC2626"
+            name={t('north_field')}
+            crop={t('wheat')}
+            badge={crisis ? t('drought_risk') : t('healthy')}
+            badgeBg={crisis ? "#FEE2E2" : "#F0FDF4"}
+            badgeColor={crisis ? "#DC2626" : "#16A34A"}
             score={crisis ? 32 : 72}
             ringColor={crisis ? '#EF4444' : '#EA580C'}
             ndvi={crisis ? '0.21' : '0.61'}
-            moisture="Low"
+            moisture={crisis ? t('low') : t('optimal')}
             trend={crisis ? trendDown : trendUp}
             onClick={() => onNavigate('farm_detail')}
           />
 
           <FarmCard
             cropImg={riceImg}
-            name="South Field"
-            crop="Rice"
-            badge="Healthy"
-            badgeBg="#DCFCE7"
+            name={t('south_field')}
+            crop={t('rice')}
+            badge={t('healthy')}
+            badgeBg="#F0FDF4"
             badgeColor="#16A34A"
             score={88}
-            ringColor="#22C55E"
+            ringColor="#16A34A"
             ndvi="0.72"
-            moisture="Optimal"
-            trend={[{v:0.60},{v:0.63},{v:0.68},{v:0.70},{v:0.72}]}
-            onClick={() => onNavigate('farms')}
+            moisture={t('optimal')}
+            trend={trendUp}
+            onClick={() => onNavigate('farm_detail')}
           />
         </div>
 
@@ -225,7 +231,7 @@ export default function HomeScreen({ onNavigate }) {
           }}
         >
           <Plus size={16} strokeWidth={2.5} />
-          Add New Field
+          {t('add_new_field')}
         </button>
       </div>
     </div>

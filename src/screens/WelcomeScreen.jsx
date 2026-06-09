@@ -14,6 +14,7 @@ export default function WelcomeScreen({ onStart }) {
 
 /* ── LIGHT WELCOME (existing beige/cream design) ─────────────────────────── */
 function LightWelcome({ onStart }) {
+  const { t } = useI18n();
   const bgRgb = '248,246,240';
   return (
     <div className="split-auth-container">
@@ -27,7 +28,7 @@ function LightWelcome({ onStart }) {
           <span style={{ color:'var(--cs-accent)' }}>Sentinel</span>
         </h1>
         <p style={{ fontSize:13, fontWeight:500, color:'var(--cs-text-dim)', margin:'6px 0 0' }}>
-          AI-Powered Farm Intelligence
+          {t('tagline')}
         </p>
 
         {/* Desktop button (hidden on mobile) */}
@@ -51,6 +52,7 @@ function LightWelcome({ onStart }) {
 
 /* ── DARK WELCOME (satellite / space design) ─────────────────────────────── */
 function DarkWelcome({ onStart }) {
+  const { t } = useI18n();
   return (
     <div className="split-auth-container" style={{ background:'#0B1A0D' }}>
       {/* Branding */}
@@ -60,7 +62,7 @@ function DarkWelcome({ onStart }) {
           <span style={{ color:'#4ADE80' }}>Sentinel</span>
         </h1>
         <p style={{ fontSize:14, fontWeight:400, color:'rgba(255,255,255,0.70)', margin:'0 0 28px', textAlign:'center', letterSpacing:'0.1px' }}>
-          AI-powered farm intelligence
+          {t('tagline')}
         </p>
 
         {/* Desktop button (hidden on mobile) */}
@@ -106,6 +108,7 @@ function CropLogo({ bgColor, size = 72, style = {} }) {
 }
 
 function GetStartedBtn({ onStart }) {
+  const { t } = useI18n();
   return (
     <button
       onClick={onStart}
@@ -122,7 +125,7 @@ function GetStartedBtn({ onStart }) {
         <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.2)" />
         <path d="M10 8l4 4-4 4" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      Get Started
+      {t('get_started')}
     </button>
   );
 }

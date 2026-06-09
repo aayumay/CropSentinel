@@ -6,11 +6,11 @@ import profileLeaves from '../assets/profile-leaves.png';
 import farmerAvatar  from '../assets/farmer-avatar.png';
 
 const MENU = [
-  { icon: Home,        label: 'Farm Details',          screen: 'farm_details_config' },
-  { icon: Settings,    label: 'Account Settings',       screen: 'settings'             },
-  { icon: Bell,        label: 'Notification Settings',  screen: 'notification_settings'},
-  { icon: HelpCircle,  label: 'Help & Support',         screen: 'help_support'         },
-  { icon: Info,        label: 'About CropSentinel',     screen: 'about'                },
+  { icon: Home,        labelKey: 'farm_details',          screen: 'farm_details_config' },
+  { icon: Settings,    labelKey: 'account_settings',      screen: 'settings'             },
+  { icon: Bell,        labelKey: 'notification_settings', screen: 'notification_settings'},
+  { icon: HelpCircle,  labelKey: 'help_support',          screen: 'help_support'         },
+  { icon: Info,        labelKey: 'about',                 screen: 'about'                },
 ];
 
 export default function ProfileScreen({ onNavigate }) {
@@ -22,10 +22,10 @@ export default function ProfileScreen({ onNavigate }) {
     <div className="dashboard-container" style={{ display:'flex', flexDirection:'column', minHeight:'100%', background:'var(--cs-bg)', paddingBottom:32 }}>
       {/* Header */}
       <div style={{ padding:'24px 20px 12px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>Profile</h1>
+        <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>{t('profile')}</h1>
         <button onClick={() => onNavigate('edit_profile')}
           style={{ display:'flex', alignItems:'center', gap:5, background:'var(--cs-card)', border:'1px solid var(--cs-border)', borderRadius:12, padding:'7px 12px', fontSize:12, fontWeight:700, color:'var(--cs-accent)', cursor:'pointer' }}>
-          <Edit3 size={13} /> Edit
+          <Edit3 size={13} /> {t('edit')}
         </button>
       </div>
 
@@ -75,8 +75,8 @@ export default function ProfileScreen({ onNavigate }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Menu */}
         <div style={{ background:'var(--cs-card)', borderRadius:24, border:'1px solid var(--cs-border-soft)', overflow:'hidden', boxShadow:'0 1px 4px var(--cs-shadow)' }}>
-        {MENU.map(({ icon: Icon, label, screen }, i) => (
-          <button key={label} onClick={() => onNavigate(screen)}
+        {MENU.map(({ icon: Icon, labelKey, screen }, i) => (
+          <button key={labelKey} onClick={() => onNavigate(screen)}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'15px 16px', borderBottom: i < MENU.length-1 ? '1px solid var(--cs-bg)' : 'none', background:'none', cursor:'pointer', transition:'background 0.15s', fontFamily:'inherit' }}
             onMouseEnter={e => e.currentTarget.style.background='var(--cs-bg)'}
             onMouseLeave={e => e.currentTarget.style.background='none'}
@@ -85,7 +85,7 @@ export default function ProfileScreen({ onNavigate }) {
               <div style={{ width:34, height:34, background:'var(--cs-accent-light)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Icon size={16} strokeWidth={1.8} style={{ color:'var(--cs-accent)' }} />
               </div>
-              <span style={{ fontSize:14, fontWeight:600, color:'var(--cs-text)' }}>{label}</span>
+              <span style={{ fontSize:14, fontWeight:600, color:'var(--cs-text)' }}>{t(labelKey)}</span>
             </div>
             <ChevronRight size={16} style={{ color:'var(--cs-icon-dim)' }} />
           </button>
@@ -98,7 +98,7 @@ export default function ProfileScreen({ onNavigate }) {
           onClick={() => onNavigate('welcome')}
           style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'14px', background:'var(--cs-danger-light)', border:'1px solid var(--cs-danger-border)', borderRadius:18, fontSize:14, fontWeight:700, color:'var(--cs-danger)', cursor:'pointer', fontFamily:'inherit' }}
         >
-          <LogOut size={16} /> Log Out
+          <LogOut size={16} /> {t('log_out')}
         </button>
       </div>
       </div>

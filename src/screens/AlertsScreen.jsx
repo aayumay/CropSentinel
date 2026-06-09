@@ -123,15 +123,15 @@ export default function AlertsScreen() {
         {/* Header */}
         <div style={{ padding:'24px 20px 12px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>Alerts</h1>
+            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>{t('alerts_title')}</h1>
             {unreadCount > 0
-              ? <p style={{ fontSize:11, fontWeight:700, color:'#DC2626', margin:'4px 0 0' }}>{unreadCount} Unread Alert{unreadCount>1?'s':''}</p>
-              : <p style={{ fontSize:11, fontWeight:600, color:'var(--cs-text-muted)', margin:'4px 0 0' }}>All caught up!</p>
+              ? <p style={{ fontSize:11, fontWeight:700, color:'#DC2626', margin:'4px 0 0' }}>{t('unread_alerts').replace('{n}', unreadCount)}</p>
+              : <p style={{ fontSize:11, fontWeight:600, color:'var(--cs-text-muted)', margin:'4px 0 0' }}>{t('all_caught_up')}</p>
             }
           </div>
           {activeTab === 'Active' && activeAlerts.length > 0 && (
             <button onClick={clearActive} style={{ display:'flex', alignItems:'center', gap:5, background:'#FFF5F5', border:'1px solid #FEE2E2', borderRadius:10, padding:'6px 12px', fontSize:12, fontWeight:700, color:'#DC2626', cursor:'pointer' }}>
-              <Trash2 size={12} /> Clear All
+              <Trash2 size={12} /> {t('clear_all')}
             </button>
           )}
         </div>
@@ -145,7 +145,7 @@ export default function AlertsScreen() {
             color: activeTab===tab ? 'white' : '#9CA3AF',
             boxShadow: activeTab===tab ? '0 2px 8px rgba(74,124,89,0.3)' : '0 1px 3px var(--cs-shadow)',
           }}>
-            {tab} {tab==='Active' && activeAlerts.length > 0 && `(${activeAlerts.length})`}
+            {t(tab.toLowerCase())} {tab==='Active' && activeAlerts.length > 0 && `(${activeAlerts.length})`}
           </button>
         ))}
         </div>
@@ -156,7 +156,7 @@ export default function AlertsScreen() {
         {displayed.length === 0 ? (
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 0', gap:12 }}>
             <Bell size={40} style={{ color:'#D4D0C8' }} />
-            <p style={{ fontSize:14, color:'var(--cs-text-muted)', fontWeight:600, margin:0 }}>No {activeTab.toLowerCase()} alerts</p>
+            <p style={{ fontSize:14, color:'var(--cs-text-muted)', fontWeight:600, margin:0 }}>{t('no_alerts').replace('{tab}', t(activeTab.toLowerCase()))}</p>
           </div>
         ) : displayed.map(alert => {
           const Icon = alert.icon;

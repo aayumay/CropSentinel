@@ -19,6 +19,10 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Utility classes - Mobile First */
+.desktop-only { display: none !important; }
+.mobile-only { display: block !important; }
+
 * {
   box-sizing: border-box;
 }
@@ -62,42 +66,23 @@ body {
 *::-webkit-scrollbar { width: 0; height: 0; }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   RESPONSIVE DESKTOP LAYOUT (Sidebar / Grid)
+   RESPONSIVE LAYOUT UTILITIES
    ────────────────────────────────────────────────────────────────────────── */
 
-/* Main wrapper */
-.app-container {
-  display: flex;
-  flex-direction: column;
-  width: 100vw;
-  height: 100dvh;
-  background: var(--cs-bg);
-  overflow: hidden;
-  position: relative;
-}
-
-/* Scrollable main content area */
-.app-main {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  position: relative; /* Modals inside will cover this, not the sidebar */
-  background: var(--cs-bg);
-}
-
-/* Navigation bar (Bottom on mobile, Left on desktop) */
+/* Navigation bar — bottom on mobile */
 .app-nav {
   flex-shrink: 0;
   background: var(--cs-card);
   border-top: 1px solid var(--cs-border);
   display: flex;
+  flex-direction: row;
   justify-content: space-around;
   align-items: center;
   min-height: 64px;
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
   padding-top: 8px;
   z-index: 50;
+  width: 100%;
 }
 
 .nav-item {
@@ -115,26 +100,12 @@ body {
   transition: color 0.2s;
 }
 
-.nav-item.active {
-  color: var(--cs-accent);
-}
+.nav-item.active { color: var(--cs-accent); }
+.nav-item span   { font-size: 10px; font-weight: 600; line-height: 1; }
 
-.nav-item span {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-/* Grids & Constrained Forms */
-.desktop-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.content-max {
-  width: 100%;
-}
+/* Grids & content width */
+.content-max      { width: 100%; }
+.dashboard-container { width: 100%; box-sizing: border-box; }
 
 .desktop-grid, .desktop-grid-large {
   display: flex;
@@ -148,18 +119,12 @@ body {
   gap: 16px;
 }
 
-.desktop-only {
-  display: none;
-}
+.desktop-only { display: none !important; }
+.mobile-only  { display: block; }
 
-.mobile-only {
-  display: block;
-}
+.chart-container { height: 144px; }
 
-.chart-container {
-  height: 144px;
-}
-
+/* Auth split layout */
 .split-auth-container {
   display: flex;
   flex-direction: column;
@@ -168,39 +133,34 @@ body {
   background: var(--cs-bg);
   overflow: hidden;
 }
-
 .split-auth-brand {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
-
 .split-auth-visual {
   flex: 1;
   position: relative;
   min-height: 0;
 }
 
+/* ── Desktop (≥ 768px) ── */
 @media (min-width: 768px) {
-  .app-container {
-    flex-direction: row-reverse; /* Put nav on left? Wait, row-reverse makes it right. */
-  }
-  
-  /* Actually we want nav on left, so flex-direction: row, but nav comes second in DOM?
-     Wait, in App.jsx nav is AFTER main. So let's use flex-direction: row-reverse so nav is on left! 
-     Yes, if DOM is <main><nav>, row-reverse puts nav on left. */
-  .app-container {
-    flex-direction: row-reverse;
-  }
 
+  /* Nav becomes LEFT sidebar */
   .app-nav {
     flex-direction: column;
     justify-content: flex-start;
+    align-items: stretch;
     width: 240px;
+    min-width: 240px;
     height: 100%;
+    min-height: 0;
     border-top: none;
     border-right: 1px solid var(--cs-border);
     padding-top: 32px;
+    padding-bottom: 0;
+    order: -1; /* appears on LEFT */
   }
 
   .nav-item {
@@ -209,11 +169,21 @@ body {
     justify-content: flex-start;
     padding: 16px 32px;
     gap: 16px;
-    flex: none;
+    flex: 0 0 auto;
   }
 
-  .nav-item span {
-    font-size: 15px !important;
+  .nav-item span { font-size: 15px !important; }
+
+  /* When nav is sidebar, the outer flex must be row */
+  /* App.jsx wraps with an inline flex-direction:column div.
+     On desktop, nav needs to be beside content.
+     We handle this by using a special class on the outer div. */
+  .app-shell-desktop {
+    flex-direction: row !important;
+    align-items: stretch;
+  }
+  .app-shell-desktop > .app-nav {
+    order: 0;
   }
 
   .desktop-grid {
@@ -240,6 +210,29 @@ body {
     min-width: 0; /* Prevent flex children from overflowing */
   }
 
+  /* Allows side-by-side panels to scroll independently on desktop */
+  .desktop-scroll-wrapper {
+    height: 100%;
+    overflow: hidden;
+    align-items: stretch;
+  }
+  
+  .desktop-scroll-panel {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Custom scrollbar for sleeker desktop UI */
+    scrollbar-width: thin;
+    scrollbar-color: var(--cs-border) transparent;
+  }
+  .desktop-scroll-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+  .desktop-scroll-panel::-webkit-scrollbar-thumb {
+    background: var(--cs-border);
+    border-radius: 4px;
+  }
+
   .desktop-split-2-1 > :first-child {
     flex: 2;
   }
@@ -260,11 +253,11 @@ body {
   }
 
   .desktop-only {
-    display: block;
+    display: block !important;
   }
 
   .mobile-only {
-    display: none;
+    display: none !important;
   }
 
   .chart-container {

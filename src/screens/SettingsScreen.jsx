@@ -248,7 +248,7 @@ export default function SettingsScreen({ onNavigate }) {
           />
           <OptionPicker
             label={t('language')}
-            options={[{ key: 'en', label: 'English' }, { key: 'hi', label: 'हिन्दी' }, { key: 'gu', label: 'Gujarati' }]}
+            options={[{ key: 'en', label: 'English' }, { key: 'hi', label: 'हिन्दी' }, { key: 'gu', label: 'ગુજરાતી' }]}
             value={language} onChange={setLanguage}
           />
           {/* Theme picker — directly connected to ThemeContext */}
@@ -276,7 +276,7 @@ export default function SettingsScreen({ onNavigate }) {
           <Row label={t('export_data')}     value="" isLast />
         </Section>
 
-        <Section title="About">
+        <Section title={t('about')}>
           <Row label={t('version')}   value="1.0.0" />
           <Row label={t('rate_app')}  value="⭐⭐⭐⭐⭐" isLast />
         </Section>

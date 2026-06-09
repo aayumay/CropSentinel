@@ -1,390 +1,343 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings2, Droplets, Clock, ChevronDown, X, Thermometer, Wind, Cloud, MapPin, Activity, Leaf } from 'lucide-react';
-import { useCropSentinel } from '../state/DemoContext';
-import { LineChart, Line, AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
-import axios from 'axios';
-import wheat from '../assets/wheat.png';
-import rice  from '../assets/rice.png';
+import React, { useRef, useEffect } from 'react';
+import { ArrowLeft, Share2, Activity, ExternalLink, MapPin } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { useI18n } from '../I18nContext';
+import { useCropSentinel } from '../state/DemoContext';
+import wheatImg from '../assets/wheat.png';
+import riceImg from '../assets/rice.png';
 
-// Fix Leaflet icon
-import iconUrl       from 'leaflet/dist/images/marker-icon.png';
-import iconShadowUrl from 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/leaflet.css';
-L.Marker.prototype.options.icon = L.icon({ iconUrl, shadowUrl: iconShadowUrl, iconSize:[25,41], iconAnchor:[12,41] });
-
-/* ── Farm data ─────────────────────────────────────────────────────────── */
-const FARMS = [
-  { id:'north', name:'North Field', crop:'Wheat', img:wheat, lat:22.3072, lng:73.1812, area:'6.2', ndvi:'0.61', moisture:'Low',     health:72, soilHealth:'Fair',  alerts:1, ringColor:'#EA580C' },
-  { id:'south', name:'South Field', crop:'Rice',  img:rice,  lat:22.3100, lng:73.1850, area:'6.2', ndvi:'0.72', moisture:'Optimal', health:88, soilHealth:'Good',  alerts:0, ringColor:'#22C55E' },
-];
-
-/* ── Trend data ─────────────────────────────────────────────────────────── */
+/* ── MOCK TREND DATA ── */
 const TRENDS = {
-  north: {
-    ndvi:     [{ d:'May 1',v:0.50 },{ d:'May 15',v:0.55 },{ d:'Jun 1',v:0.52 },{ d:'Jun 15',v:0.58 },{ d:'Jul 1',v:0.61 }],
-    moisture: [{ d:'May 1',v:42 },{ d:'May 15',v:38 },{ d:'Jun 1',v:32 },{ d:'Jun 15',v:26 },{ d:'Jul 1',v:18 }],
-  },
-  south: {
-    ndvi:     [{ d:'May 1',v:0.60 },{ d:'May 15',v:0.63 },{ d:'Jun 1',v:0.66 },{ d:'Jun 15',v:0.70 },{ d:'Jul 1',v:0.72 }],
-    moisture: [{ d:'May 1',v:58 },{ d:'May 15',v:62 },{ d:'Jun 1',v:60 },{ d:'Jun 15',v:65 },{ d:'Jul 1',v:68 }],
-  },
+  north: { ndvi: [{d:'May 15',v:0.65}, {d:'Jun 1',v:0.62}, {d:'Jun 15',v:0.58}, {d:'Jul 1',v:0.21}] },
+  south: { ndvi: [{d:'May 15',v:0.75}, {d:'Jun 1',v:0.77}, {d:'Jun 15',v:0.78}, {d:'Jul 1',v:0.80}] }
 };
 
-/* ── Weather mock ───────────────────────────────────────────────────────── */
-const WEATHER = { temp:'31°C', humidity:'56%', rainChance:'10%', wind:'18 km/h', feelsLike:'34°C', uvIndex:'High', condition:'Partly Cloudy' };
+const card = {
+  background: 'var(--cs-card)',
+  borderRadius: 22,
+  border: '1px solid var(--cs-border-soft)',
+  boxShadow: '0 2px 10px var(--cs-shadow)',
+  padding: 20,
+  marginBottom: 16,
+};
 
-/* ── Shared card style ─────────────────────────────────────────────────── */
-const card = { background:'var(--cs-card)', borderRadius:20, border:'1px solid var(--cs-border-soft)', boxShadow:'0 1px 6px var(--cs-shadow)', padding:16, marginBottom:12 };
-
-/* ── Custom Tooltip ────────────────────────────────────────────────────── */
-function ChartTip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM SVG FIELD MAP (Kept but adapted for a standard look)
+══════════════════════════════════════════════════════════════════ */
+function FieldHeatmap({ ndviScore, crisis }) {
+  // A sleek geometric SVG representation of a farm field
   return (
-    <div style={{ background:'var(--cs-card)', border:'1px solid var(--cs-border)', borderRadius:8, padding:'4px 10px', fontSize:10 }}>
-      <p style={{ margin:0, color:'var(--cs-text-muted)' }}>{label}</p>
-      <p style={{ margin:0, color:'var(--cs-accent)', fontWeight:700 }}>{payload[0].value}</p>
+    <div style={{ position:'relative', width:'100%', height:240, background:'#203023', borderRadius:'inherit', overflow:'hidden' }}>
+      
+      {/* Background grid */}
+      <div style={{
+        position:'absolute', inset:0, opacity:0.1,
+        backgroundImage: 'linear-gradient(#4ADE80 1px, transparent 1px), linear-gradient(90deg, #4ADE80 1px, transparent 1px)',
+        backgroundSize: '20px 20px'
+      }} />
+
+      <svg width="100%" height="100%" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" style={{ position:'absolute', inset:0 }}>
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <radialGradient id="healthy" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(34,197,94,0.6)" />
+            <stop offset="100%" stopColor="rgba(34,197,94,0)" />
+          </radialGradient>
+          <radialGradient id="stress" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(239,68,68,0.8)" />
+            <stop offset="100%" stopColor="rgba(239,68,68,0)" />
+          </radialGradient>
+          <radialGradient id="warn" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(249,115,22,0.7)" />
+            <stop offset="100%" stopColor="rgba(249,115,22,0)" />
+          </radialGradient>
+        </defs>
+
+        {/* The geometric field shape */}
+        <polygon points="40,20 360,40 380,210 20,190" fill="#2d6a1f" stroke="#1a3d0e" strokeWidth="2" />
+        
+        {/* Field sector lines */}
+        <line x1="200" y1="30" x2="200" y2="200" stroke="#1a3d0e" strokeWidth="1" strokeDasharray="4 4" />
+        <line x1="30" y1="105" x2="370" y2="125" stroke="#1a3d0e" strokeWidth="1" strokeDasharray="4 4" />
+
+        {/* Heatmap overlay based on crisis state */}
+        {crisis ? (
+          <>
+            <circle cx="120" cy="80" r="45" fill="url(#stress)" filter="url(#glow)" />
+            <circle cx="280" cy="150" r="60" fill="url(#stress)" filter="url(#glow)" />
+            <circle cx="180" cy="160" r="40" fill="url(#warn)" filter="url(#glow)" />
+            <circle cx="300" cy="60" r="30" fill="url(#healthy)" filter="url(#glow)" />
+          </>
+        ) : (
+          <>
+            <circle cx="100" cy="100" r="60" fill="url(#healthy)" filter="url(#glow)" />
+            <circle cx="260" cy="120" r="80" fill="url(#healthy)" filter="url(#glow)" />
+            <circle cx="340" cy="160" r="40" fill="url(#warn)" filter="url(#glow)" />
+          </>
+        )}
+      </svg>
+      
+      {/* Scanning Laser Animation */}
+      <div className="laser-scan" />
+      <style>{`
+        .laser-scan {
+          position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+          background: rgba(74, 222, 128, 0.6); box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+          animation: scan 3s linear infinite; z-index: 10; opacity: 0.7;
+        }
+        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+      `}</style>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   TABS
-══════════════════════════════════════════════════════════════════════════ */
-
-function OverviewTab({ farm }) {
+/* ══════════════════════════════════════════════════════════════════
+   LEFT PANEL — Reverting to normal theme with premium spacing
+══════════════════════════════════════════════════════════════════ */
+function LeftPanel({ farm, onNavigate }) {
   const { state } = useCropSentinel();
-  const crisis = state.isCrisisActive && farm.id === 'north';
-  const score  = crisis ? 32 : farm.health;
-  const r = 44, circ = 2 * Math.PI * r;
-  const offset = circ - circ * score / 100;
+  const { t }     = useI18n();
+  const crisis    = state.isCrisisActive && farm.id === 'north';
+  const score     = crisis ? 32 : farm.health;
+  const ndvi      = crisis ? '0.21' : farm.ndvi;
+  const moisture  = crisis ? 'Low'  : farm.moisture;
   const ringColor = crisis ? '#EF4444' : farm.ringColor;
+  const data      = TRENDS[farm.id];
+
+  const statusLabel = crisis ? 'Critical'    : score >= 80 ? t('healthy')     : t('drought_risk');
+  const statusBg    = crisis ? '#FEE2E2'     : score >= 80 ? '#DCFCE7'        : '#FEF3C7';
+  const statusColor = crisis ? '#DC2626'     : score >= 80 ? '#16A34A'        : '#D97706';
+
+  const r    = 54;
+  const circ = 2 * Math.PI * r;
+  const off  = circ - circ * score / 100;
 
   return (
-    <>
-      {/* Health ring + quick stats */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
-        {/* Ring */}
-        <div style={{ ...card, marginBottom:0, display:'flex', flexDirection:'column', alignItems:'center', padding:'16px 12px' }}>
-          <p style={{ fontSize:9, color:'var(--cs-text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', margin:'0 0 10px' }}>Health Score</p>
-          <div style={{ position:'relative', width:96, height:96, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="96" height="96" style={{ position:'absolute', inset:0, transform:'rotate(-90deg)' }}>
-              <circle cx="48" cy="48" r={r} strokeWidth="7" stroke="var(--cs-border)" fill="transparent" />
-              <circle cx="48" cy="48" r={r} strokeWidth="7" stroke={ringColor} fill="transparent"
-                strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
+    <div style={{ display:'flex', flexDirection:'column' }}>
+
+      {/* Crop Type */}
+      <div style={{ ...card, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px' }}>
+        <div>
+          <p style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 4px' }}>
+            {t('crop_type')}
+          </p>
+          <p style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>{farm.crop}</p>
+        </div>
+        <img src={farm.img} alt={farm.crop} style={{ width:72, height:72, objectFit:'contain', opacity:0.9, flexShrink:0 }} />
+      </div>
+
+      {/* Health Score */}
+      <div style={{ ...card, padding:'20px' }}>
+        <p style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 16px', textAlign:'center' }}>
+          {t('health_score')}
+        </p>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
+          <div style={{ position:'relative', width:130, height:130, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="130" height="130" style={{ position:'absolute', inset:0, transform:'rotate(-90deg)' }}>
+              <circle cx="65" cy="65" r={r} strokeWidth="10" stroke="var(--cs-border)" fill="transparent" />
+              <circle cx="65" cy="65" r={r} strokeWidth="10"
+                stroke={ringColor} fill="transparent"
+                strokeDasharray={circ} strokeDashoffset={off}
+                strokeLinecap="round" />
             </svg>
-            <div style={{ position:'relative', zIndex:1, textAlign:'center' }}>
-              <span style={{ fontSize:28, fontWeight:900, color:'var(--cs-text)', lineHeight:1, display:'block' }}>{score}</span>
-              <span style={{ fontSize:10, color:'var(--cs-text-muted)' }}>/100</span>
+            <div style={{ textAlign:'center', position:'relative', zIndex:1 }}>
+              <span style={{ fontSize:40, fontWeight:900, color:'var(--cs-text)', lineHeight:1, display:'block' }}>{score}</span>
+              <span style={{ fontSize:13, color:'var(--cs-text-muted)', fontWeight:500 }}>/100</span>
             </div>
           </div>
-          <span style={{ marginTop:8, fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:20,
-            background: crisis ? 'var(--cs-danger-light)' : score >= 80 ? 'var(--cs-accent-light)' : 'var(--cs-warning-light)',
-            color:      crisis ? 'var(--cs-danger)'       : score >= 80 ? 'var(--cs-accent)'        : '#D97706' }}>
-            {crisis ? 'Critical' : score >= 80 ? 'Healthy' : 'Drought Risk'}
+          <span style={{ fontSize:13, fontWeight:700, padding:'6px 20px', borderRadius:999, background:statusBg, color:statusColor }}>
+            {statusLabel}
           </span>
-        </div>
-
-        {/* Quick stats */}
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {[
-            { label:'NDVI',        value: crisis ? '0.21' : farm.ndvi, color: 'var(--cs-accent)' },
-            { label:'Moisture',    value: farm.moisture,               color: '#60A5FA' },
-            { label:'Soil Health', value: farm.soilHealth,             color: 'var(--cs-text)' },
-            { label:'Area',        value: farm.area + ' ac',           color: 'var(--cs-text)' },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ ...card, marginBottom:0, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <p style={{ fontSize:10, color:'var(--cs-text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.04em', margin:0 }}>{label}</p>
-              <p style={{ fontSize:14, fontWeight:900, color, margin:0 }}>{value}</p>
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* Alerts */}
-      {farm.alerts > 0 && (
-        <div style={{ ...card, background:'var(--cs-danger-light)', border:'1px solid var(--cs-danger-border)', display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:36, height:36, borderRadius:12, background:'var(--cs-danger)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <Activity size={16} style={{ color:'#fff' }} />
+      {/* Stats row */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:16 }}>
+        {[
+          { label:'NDVI',           value:ndvi,      color:'var(--cs-accent)' },
+          { label:t('moisture'),    value:moisture,  color:moisture==='Low'?'#EF4444':'#60A5FA' },
+          { label:t('last_update'), value:'2 hrs ago', color:'var(--cs-text-sec)' },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{
+            background:'var(--cs-card)', borderRadius:16,
+            border:'1px solid var(--cs-border-soft)', boxShadow:'0 1px 4px var(--cs-shadow)',
+            padding:'12px 10px', textAlign:'center',
+          }}>
+            <p style={{ fontSize:9, fontWeight:700, color:'var(--cs-text-muted)', textTransform:'uppercase', letterSpacing:'0.06em', margin:'0 0 6px' }}>{label}</p>
+            <p style={{ fontSize:14, fontWeight:900, color, margin:0 }}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Alert banner */}
+      {(farm.alerts > 0 || crisis) && (
+        <div style={{ ...card, background:'#FEF2F2', border:'1px solid #FECACA', display:'flex', alignItems:'center', gap:14, padding:'14px 16px' }}>
+          <div style={{ width:42, height:42, borderRadius:12, background:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <Activity size={18} style={{ color:'#fff' }} />
           </div>
           <div>
-            <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:0 }}>Drought Risk Detected</p>
-            <p style={{ fontSize:11, color:'var(--cs-text-muted)', margin:'2px 0 0' }}>Moisture level critically low</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#991B1B', margin:0 }}>Drought Risk Detected</p>
+            <p style={{ fontSize:12, color:'#B91C1C', margin:'4px 0 0', fontWeight:500 }}>Moisture level critically low</p>
           </div>
         </div>
       )}
-    </>
-  );
-}
 
-function SatelliteTab({ farm }) {
-  return (
-    <>
-      {/* Map */}
-      <div style={{ ...card, padding:0, overflow:'hidden', borderRadius:20 }}>
-        <div style={{ height:220, width:'100%' }}>
-          <MapContainer center={[farm.lat, farm.lng]} zoom={14} style={{ width:'100%', height:'100%' }}
-            zoomControl={false} attributionControl={false}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Marker position={[farm.lat, farm.lng]} />
-          </MapContainer>
-        </div>
-        {/* Health gradient legend */}
-        <div style={{ padding:'10px 14px', borderTop:'1px solid var(--cs-border-soft)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-            <span style={{ fontSize:9, color:'var(--cs-text-muted)', fontWeight:600 }}>Low Health</span>
-            <span style={{ fontSize:9, color:'var(--cs-text-muted)', fontWeight:600 }}>High Health</span>
-          </div>
-          <div style={{ height:6, borderRadius:3, background:'linear-gradient(to right, #EF4444, #EAB308, #22C55E)' }} />
-        </div>
-      </div>
-
-      {/* Coordinates */}
-      <div style={{ ...card, display:'flex', alignItems:'center', gap:12 }}>
-        <MapPin size={18} style={{ color:'var(--cs-accent)', flexShrink:0 }} />
-        <div>
-          <p style={{ fontSize:10, color:'var(--cs-text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', margin:0 }}>Farm Coordinates</p>
-          <p style={{ fontSize:14, fontWeight:700, color:'var(--cs-text)', margin:'2px 0 0' }}>
-            {farm.lat.toFixed(4)}°N, {farm.lng.toFixed(4)}°E
-          </p>
-        </div>
-      </div>
-
-      {/* NDVI badge */}
-      <div style={{ ...card }}>
-        <p style={{ fontSize:12, fontWeight:700, color:'var(--cs-text)', margin:'0 0 10px' }}>Vegetation Index (NDVI)</p>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <span style={{ fontSize:32, fontWeight:900, color:'var(--cs-accent)' }}>{farm.ndvi}</span>
-          <div style={{ flex:1, height:8, background:'var(--cs-border)', borderRadius:4, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${parseFloat(farm.ndvi)*100}%`, background:'linear-gradient(to right, #EF4444, #22C55E)', borderRadius:4 }} />
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function TrendsTab({ farm }) {
-  const data = TRENDS[farm.id];
-  return (
-    <>
       {/* NDVI Trend */}
-      <div style={card}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-          <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:0 }}>NDVI Trend</p>
-          <span style={{ fontSize:13, fontWeight:900, color:'var(--cs-accent)' }}>{farm.ndvi}</span>
+      <div style={{ ...card, padding:'16px 20px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+          <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:0 }}>{t('ndvi_trend')}</p>
+          <span style={{ fontSize:18, fontWeight:900, color:'var(--cs-accent)' }}>{ndvi}</span>
         </div>
-        <div style={{ height:100 }}>
+        <div style={{ height:80 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data.ndvi} margin={{ top:4, right:4, left:-20, bottom:0 }}>
-              <defs>
-                <linearGradient id="ndviGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--cs-accent)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--cs-accent)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--cs-border)" vertical={false} />
-              <XAxis dataKey="d" tick={{ fontSize:8, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize:8, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTip />} />
-              <Area type="monotone" dataKey="v" stroke={farm.ringColor} strokeWidth={2} fill="url(#ndviGrad)" dot={{ r:2.5, fill:farm.ringColor, strokeWidth:0 }} />
-            </AreaChart>
+            <LineChart data={data.ndvi} margin={{ top:4, right:4, left:-32, bottom:0 }}>
+              <YAxis domain={['dataMin - 0.05','dataMax + 0.05']} hide />
+              <XAxis dataKey="d" tick={{ fontSize:9, fill:'var(--cs-text-muted)', fontWeight:500 }} tickLine={false} axisLine={false} />
+              <Line type="monotone" dataKey="v" stroke={ringColor} strokeWidth={3} dot={{ r:4, fill:ringColor, strokeWidth:0 }} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Moisture Trend */}
-      <div style={card}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-          <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:0 }}>Soil Moisture Trend</p>
-          <span style={{ fontSize:13, fontWeight:900, color:'#60A5FA' }}>{farm.moisture}</span>
-        </div>
-        <div style={{ height:100 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data.moisture} margin={{ top:4, right:4, left:-20, bottom:0 }}>
-              <defs>
-                <linearGradient id="moistGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#60A5FA" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#60A5FA" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--cs-border)" vertical={false} />
-              <XAxis dataKey="d" tick={{ fontSize:8, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize:8, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTip />} />
-              <Area type="monotone" dataKey="v" stroke="#60A5FA" strokeWidth={2} fill="url(#moistGrad)" dot={{ r:2.5, fill:'#60A5FA', strokeWidth:0 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </>
+      {/* Intervention button */}
+      <button
+        onClick={() => onNavigate('intervention')}
+        style={{
+          width:'100%', background:'var(--cs-accent)', color:'#FFFFFF',
+          fontWeight:800, fontSize:16, padding:'18px', borderRadius:20,
+          border:'none', cursor:'pointer',
+          boxShadow:'0 8px 24px rgba(74,124,89,0.35)',
+          fontFamily:'inherit', marginTop: 'auto',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {t('view_intervention')}
+      </button>
+    </div>
   );
 }
 
-function WeatherTab({ farm }) {
-  const ITEMS = [
-    { icon: Thermometer, label:'Temperature',   value:'31°C',      color:'#EF4444' },
-    { icon: Droplets,    label:'Humidity',       value:'56%',       color:'#60A5FA' },
-    { icon: Cloud,       label:'Rain Chance',    value:'10%',       color:'#93C5FD' },
-    { icon: Wind,        label:'Wind Speed',     value:'18 km/h',   color:'#6EE7B7' },
-    { icon: Thermometer, label:'Feels Like',     value:'34°C',      color:'#F97316' },
-    { icon: Leaf,        label:'UV Index',       value:'High',      color:'#A78BFA' },
-  ];
+/* ══════════════════════════════════════════════════════════════════
+   RIGHT PANEL — Satellite heatmap + coordinates + NDVI bar
+══════════════════════════════════════════════════════════════════ */
+function RightPanel({ farm }) {
+  const { state } = useCropSentinel();
+  const { t } = useI18n();
+  const crisis    = state.isCrisisActive && farm.id === 'north';
+  const ndvi      = crisis ? '0.21' : farm.ndvi;
+
   return (
-    <>
-      {/* Condition banner */}
-      <div style={{ ...card, textAlign:'center', padding:'20px 16px' }}>
-        <p style={{ fontSize:11, color:'var(--cs-text-muted)', fontWeight:600, margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-          {farm.name} — Current Conditions
-        </p>
-        <p style={{ fontSize:28, fontWeight:900, color:'var(--cs-text)', margin:0 }}>Partly Cloudy ⛅</p>
-        <p style={{ fontSize:13, color:'var(--cs-text-sec)', margin:'4px 0 0' }}>Good day for field inspection</p>
+    <div style={{ display:'flex', flexDirection:'column' }}>
+
+      {/* Satellite View card */}
+      <div style={{ ...card, padding:0, overflow:'hidden' }}>
+        {/* Header */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px 10px' }}>
+          <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:0 }}>
+            Live Field Scan <span style={{ fontSize:10, color:'var(--cs-text-muted)', fontWeight:500 }}>(Coming D2)</span>
+          </p>
+          <ExternalLink size={14} style={{ color:'var(--cs-text-muted)', cursor:'pointer' }} />
+        </div>
+
+        {/* High-quality SVG Field Map */}
+        <FieldHeatmap ndviScore={farm.ndvi} crisis={crisis} />
+
+        {/* Legend */}
+        <div style={{ display:'flex', justifyContent:'space-between', padding:'12px 16px' }}>
+          <span style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)' }}>Low Health</span>
+          <span style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)' }}>High Health</span>
+        </div>
+        <div style={{ height:4, width:'100%', background:'linear-gradient(to right, #EF4444, #F59E0B, #10B981)' }} />
       </div>
 
-      {/* Grid */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-        {ITEMS.map(({ icon: Icon, label, value, color }) => (
-          <div key={label} style={{ ...card, marginBottom:0, display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:36, height:36, borderRadius:12, background:'var(--cs-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Icon size={16} style={{ color }} />
-            </div>
-            <div>
-              <p style={{ fontSize:9, color:'var(--cs-text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.04em', margin:0 }}>{label}</p>
-              <p style={{ fontSize:15, fontWeight:800, color:'var(--cs-text)', margin:0 }}>{value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   FARM SELECTOR SHEET
-══════════════════════════════════════════════════════════════════════════ */
-function FarmSelectorSheet({ farms, selectedId, onSelect, onClose }) {
-  return (
-    <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.55)', zIndex:200, display:'flex', alignItems:'flex-end' }}
-      onClick={onClose}>
-      <div style={{ width:'100%', maxWidth:420, margin:'0 auto', background:'var(--cs-card)', borderRadius:'26px 26px 0 0', padding:'20px 20px 36px', boxShadow:'0 -4px 30px rgba(0,0,0,0.25)' }}
-        onClick={e => e.stopPropagation()}>
-        {/* Handle */}
-        <div style={{ width:40, height:4, background:'var(--cs-border)', borderRadius:2, margin:'0 auto 20px' }} />
-        <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:'0 0 14px' }}>Select Field</p>
-        {farms.map(f => (
-          <button key={f.id}
-            onClick={() => { onSelect(f.id); onClose(); }}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'12px 14px', borderRadius:16, border: f.id === selectedId ? '2px solid var(--cs-accent)' : '1px solid var(--cs-border-soft)', background: f.id === selectedId ? 'var(--cs-accent-light)' : 'var(--cs-bg)', marginBottom:8, cursor:'pointer', fontFamily:'inherit' }}>
-            <img src={f.img} alt={f.crop} style={{ width:36, height:36, objectFit:'contain' }} />
-            <div style={{ textAlign:'left' }}>
-              <p style={{ fontSize:14, fontWeight:800, color:'var(--cs-text)', margin:0 }}>{f.name}</p>
-              <p style={{ fontSize:11, color:'var(--cs-text-muted)', margin:0 }}>{f.crop} · {f.area} acres</p>
-            </div>
-            {f.id === selectedId && <span style={{ marginLeft:'auto', fontSize:11, fontWeight:700, color:'var(--cs-accent)', background:'var(--cs-accent-light)', padding:'2px 8px', borderRadius:8 }}>Active</span>}
-          </button>
-        ))}
+      {/* GPS Card */}
+      <div style={{ ...card, display:'flex', alignItems:'center', gap:16, padding:'16px 20px' }}>
+        <div style={{ width:40, height:40, borderRadius:12, background:'var(--cs-bg)', border:'1px solid var(--cs-border-soft)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <MapPin size={18} style={{ color:'var(--cs-text-sec)' }} />
+        </div>
+        <div>
+          <p style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 4px' }}>Farm Coordinates</p>
+          <p style={{ fontSize:15, fontWeight:800, color:'var(--cs-text)', margin:0, fontFamily:'monospace' }}>22.3072°N, 73.1812°E</p>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   MAIN SCREEN
-══════════════════════════════════════════════════════════════════════════ */
-const TABS = ['Overview', 'Satellite', 'Trends', 'Weather'];
-
+/* ══════════════════════════════════════════════════════════════════
+   MAIN SCREEN WRAPPER
+══════════════════════════════════════════════════════════════════ */
 export default function FarmsScreen({ onNavigate }) {
+  const { state } = useCropSentinel();
   const { t } = useI18n();
-  const [selectedFarmId, setSelectedFarmId] = useState('north');
-  const [activeTab,      setActiveTab]      = useState(0);
-  const [showSheet,      setShowSheet]      = useState(false);
 
-  const farm = FARMS.find(f => f.id === selectedFarmId);
+  // "north" or "south"
+  const farmId = state.currentFarm || 'north';
+  const isNorth = farmId === 'north';
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case 0: return <OverviewTab  farm={farm} />;
-      case 1: return <SatelliteTab farm={farm} />;
-      case 2: return <TrendsTab    farm={farm} />;
-      case 3: return <WeatherTab   farm={farm} />;
-      default: return null;
-    }
+  const farmData = {
+    id: farmId,
+    crop: isNorth ? 'Wheat' : 'Rice',
+    img: isNorth ? wheatImg : riceImg,
+    health: isNorth ? 72 : 94,
+    ndvi: isNorth ? '0.61' : '0.81',
+    moisture: isNorth ? 'Low' : 'Optimal',
+    alerts: isNorth ? 1 : 0,
+    ringColor: isNorth ? '#F59E0B' : '#10B981',
   };
 
   return (
-    <div className="dashboard-container" style={{ display:'flex', flexDirection:'column', height:'100%', background:'var(--cs-bg)', overflow:'hidden' }}>
+    <div className="dashboard-container" style={{ display:'flex', flexDirection:'column', minHeight:'100%', background:'var(--cs-bg)' }}>
+      
+      {/* ── Header ── */}
+      <div style={{
+        flexShrink:0,
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 20px)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 20px)',
+        paddingBottom: '12px',
+        background:'var(--cs-bg)', borderBottom:'1px solid var(--cs-border-soft)',
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        position: 'sticky', top: 0, zIndex: 50
+      }}>
+        <button onClick={() => onNavigate('farms')}
+          style={{ width:36, height:36, borderRadius:'50%', background:'var(--cs-card)', border:'1px solid var(--cs-border-soft)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:'0 1px 4px var(--cs-shadow)' }}>
+          <ArrowLeft size={18} strokeWidth={2} style={{ color:'var(--cs-text)' }} />
+        </button>
 
-      {/* ── Sticky Header ── */}
-      <div style={{ flexShrink:0, padding:'18px 16px 10px', background:'var(--cs-bg)', borderBottom:'1px solid var(--cs-border-soft)' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <button onClick={() => onNavigate('home')}
-            style={{ width:34, height:34, borderRadius:'50%', background:'var(--cs-card)', border:'1px solid var(--cs-border-soft)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:'0 1px 4px var(--cs-shadow)' }}>
-            <ArrowLeft size={16} strokeWidth={2.2} style={{ color:'var(--cs-text)' }} />
-          </button>
-          <h1 style={{ fontSize:16, fontWeight:800, color:'var(--cs-text)', margin:0 }}>Field Overview</h1>
-          <button style={{ width:34, height:34, borderRadius:'50%', background:'var(--cs-card)', border:'1px solid var(--cs-border-soft)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:'0 1px 4px var(--cs-shadow)' }}>
-            <Settings2 size={15} strokeWidth={1.8} style={{ color:'var(--cs-text-sec)' }} />
-          </button>
+        <div style={{ background:'var(--cs-card)', borderRadius:'20px', padding:'6px 16px', display:'flex', alignItems:'center', gap:10, boxShadow:'0 2px 8px var(--cs-shadow)', border:'1px solid var(--cs-border-soft)' }}>
+          <img src={farmData.img} alt="" style={{ width:16, height:16 }} />
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            <span style={{ fontSize:13, fontWeight:800, color:'var(--cs-text)', lineHeight:1.2 }}>{isNorth ? 'North Field' : 'South Field'}</span>
+            <span style={{ fontSize:10, color:'var(--cs-text-muted)', fontWeight:600 }}>{farmData.crop}</span>
+          </div>
         </div>
+
+        <button style={{ width:36, height:36, borderRadius:'50%', background:'var(--cs-card)', border:'1px solid var(--cs-border-soft)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:'0 1px 4px var(--cs-shadow)' }}>
+          <Share2 size={16} strokeWidth={2} style={{ color:'var(--cs-text-sec)' }} />
+        </button>
       </div>
 
-      <div className="desktop-split" style={{ flex:1, minHeight:0, padding:'16px', overflowY:'hidden' }}>
-        
-        {/* Left Side (Scrollable) */}
-        <div style={{ display:'flex', flexDirection:'column', height:'100%', overflowY:'auto', WebkitOverflowScrolling:'touch', paddingRight:8 }}>
+      {/* ── Body ── */}
+      <div style={{ flex:1, minHeight:0, overflowY:'auto', overflowX:'hidden', display:'flex', flexDirection:'column' }} className="desktop-scroll-wrapper">
+        <div className="desktop-split" style={{ display:'flex', padding:'20px', gap:'20px', width:'100%', height:'100%' }}>
           
-          <button onClick={() => setShowSheet(true)}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'var(--cs-card)', border:'1px solid var(--cs-border-soft)', borderRadius:18, cursor:'pointer', boxShadow:'0 1px 4px var(--cs-shadow)', fontFamily:'inherit', marginBottom:12, flexShrink:0 }}>
-            <img src={farm.img} alt={farm.crop} style={{ width:36, height:36, objectFit:'contain' }} />
-            <div style={{ textAlign:'left', flex:1 }}>
-              <p style={{ fontSize:15, fontWeight:900, color:'var(--cs-text)', margin:0 }}>{farm.name}</p>
-              <p style={{ fontSize:11, color:'var(--cs-text-muted)', margin:0, fontWeight:500 }}>{farm.crop}</p>
-            </div>
-            <ChevronDown size={18} style={{ color:'var(--cs-text-muted)' }} />
-          </button>
-
-          <div style={{ display:'flex', gap:0, background:'var(--cs-bg)', borderRadius:14, border:'1px solid var(--cs-border-soft)', overflow:'hidden', marginBottom:16, flexShrink:0 }}>
-            {TABS.map((tab, i) => (
-              <button key={tab} onClick={() => setActiveTab(i)}
-                className={i === 1 ? 'mobile-only' : ''}
-                style={{ flex:1, padding:'9px 0', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all 0.18s',
-                  background: i === activeTab ? 'var(--cs-accent)' : 'transparent',
-                  color:      i === activeTab ? '#FFFFFF' : 'var(--cs-text-muted)',
-                  fontSize: 11, fontWeight: 700,
-                  borderRight: i < TABS.length-1 ? '1px solid var(--cs-border-soft)' : 'none',
-                }}>
-                {tab}
-              </button>
-            ))}
+          <div className="desktop-scroll-panel" style={{ flex: '0 0 400px', paddingBottom:'40px' }}>
+            <LeftPanel farm={farmData} onNavigate={onNavigate} />
           </div>
 
-          <div style={{ flex: 1 }}>
-            {renderTab()}
-            
-            <button onClick={() => onNavigate('intervention')}
-              style={{ width:'100%', background:'var(--cs-accent)', color:'#FFFFFF', fontWeight:800, fontSize:15, padding:'16px', borderRadius:18, border:'none', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,124,89,0.35)', fontFamily:'inherit', letterSpacing:'0.1px', margin:'24px 0' }}>
-              View Intervention
-            </button>
+          <div className="desktop-scroll-panel" style={{ flex: 1, paddingBottom:'40px' }}>
+            <RightPanel farm={farmData} />
           </div>
-        </div>
 
-        {/* Right Side Map (Desktop only) */}
-        <div className="desktop-only" style={{ height:'100%', borderRadius:24, overflow:'hidden', border:'1px solid var(--cs-border-soft)', boxShadow:'0 4px 20px var(--cs-shadow-md)', background:'var(--cs-card)' }}>
-          <SatelliteTab farm={farm} />
         </div>
       </div>
-
-      {/* ── Farm selector sheet ── */}
-      {showSheet && (
-        <FarmSelectorSheet
-          farms={FARMS}
-          selectedId={selectedFarmId}
-          onSelect={id => { setSelectedFarmId(id); setActiveTab(0); }}
-          onClose={() => setShowSheet(false)}
-        />
-      )}
     </div>
   );
 }

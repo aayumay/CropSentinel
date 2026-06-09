@@ -40,10 +40,10 @@ export default function LoginScreen({ onLogin }) {
             ))}
           </svg>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: 'var(--cs-text)', margin: 0 }}>
-            Welcome back! 👋
+            {t('welcome_back')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--cs-text-dim)', fontWeight: 500, margin: '4px 0 0' }}>
-            Login to continue
+            {t('login_to_continue')}
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export default function LoginScreen({ onLogin }) {
         {/* Email */}
         <div>
           <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--cs-text-sec)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
-            Email
+            {t('email_label')}
           </label>
           <div style={{ position: 'relative' }}>
             <Mail size={15} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'var(--cs-text-muted)' }} />
@@ -81,7 +81,7 @@ export default function LoginScreen({ onLogin }) {
         {/* Password */}
         <div>
           <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--cs-text-sec)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
-            Password
+            {t('password_label')}
           </label>
           <div style={{ position: 'relative' }}>
             <Lock size={15} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'var(--cs-text-muted)' }} />
@@ -102,7 +102,7 @@ export default function LoginScreen({ onLogin }) {
             </button>
           </div>
           <div style={{ textAlign:'right', marginTop:6 }}>
-            <span style={{ fontSize:12, fontWeight:700, color:'var(--cs-accent)', cursor:'pointer' }}>Forgot Password?</span>
+            <span style={{ fontSize:12, fontWeight:700, color:'var(--cs-accent)', cursor:'pointer' }}>{t('forgot_password')}</span>
           </div>
         </div>
 
@@ -120,15 +120,15 @@ export default function LoginScreen({ onLogin }) {
                 <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
               </svg>
-              Signing in…
+              {t('login_btn')}…
             </>
-          ) : 'Login'}
+          ) : t('login_btn')}
         </button>
 
         {/* Divider */}
         <div style={{ display:'flex', alignItems:'center', gap:12, margin:'4px 0' }}>
           <div style={{ flex:1, height:1, background:'var(--cs-border)' }} />
-          <span style={{ fontSize:11, color:'var(--cs-text-dim)', fontWeight:500 }}>or continue with</span>
+          <span style={{ fontSize:11, color:'var(--cs-text-dim)', fontWeight:500 }}>{t('or_continue_with')}</span>
           <div style={{ flex:1, height:1, background:'var(--cs-border)' }} />
         </div>
 
@@ -161,8 +161,8 @@ export default function LoginScreen({ onLogin }) {
         </div>
 
         <p style={{ textAlign:'center', fontSize:12, color:'var(--cs-text-dim)', margin:'8px 0 0' }}>
-          New farmer?{' '}
-          <span style={{ fontWeight:700, color:'var(--cs-accent)', cursor:'pointer' }}>Create Account</span>
+          {t('new_farmer')}{' '}
+          <span style={{ fontWeight:700, color:'var(--cs-accent)', cursor:'pointer' }}>{t('create_account')}</span>
         </p>
       </div>
       </div>

@@ -17,12 +17,9 @@
       content="CropSentinel uses satellite imagery and AI to give farmers real-time crop health insights and precision intervention recommendations." />
 
     <!--
-      theme-color tells Android Chrome to paint the status-bar chrome
-      the same cream colour as the app background, making it invisible.
-      The media query provides a matching dark-mode variant.
+      theme-color is dynamically injected by ThemeContext.jsx 
+      to match the exact background color of the active theme.
     -->
-    <meta name="theme-color" content="#F8F6F0" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#F8F6F0" media="(prefers-color-scheme: dark)" />
 
     <!-- PWA / Standalone mode tags ---------------------------------- -->
     <!-- iOS: remove Safari chrome when launched from home screen -->

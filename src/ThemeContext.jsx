@@ -59,6 +59,19 @@ export function ThemeProvider({ children }) {
 
   React.useEffect(() => {
     localStorage.setItem('cs-theme', isDark ? 'dark' : 'light');
+    
+    // Sync the browser/OS status bar color with the active theme background
+    const bgColor = isDark ? DARK['--cs-bg'] : LIGHT['--cs-bg'];
+    let metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (!metaTheme) {
+      metaTheme = document.createElement('meta');
+      metaTheme.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaTheme);
+    }
+    // Remove the media attribute if it exists, so we forcefully control the color
+    metaTheme.removeAttribute('media');
+    metaTheme.setAttribute('content', bgColor);
+    
   }, [isDark]);
 
   const vars = isDark ? DARK : LIGHT;

@@ -25,7 +25,7 @@ const BOTTOM_NAV_SCREENS = ['home','farms','insights','alerts','profile'];
 
 function AppNavigation() {
   const { t } = useI18n();
-  const [phase, setPhase]   = useState('welcome'); // welcome | login | app
+  const [phase, setPhase]   = useState('welcome');
   const [screen, setScreen] = useState('home');
 
   const navigate = (to) => {
@@ -46,45 +46,70 @@ function AppNavigation() {
     if (phase === 'login')   return <LoginScreen   onLogin={() => setPhase('app')}  />;
 
     switch (screen) {
-      case 'home':               return <HomeScreen             onNavigate={navigate} />;
-      case 'farms':              return <FarmsListScreen         onNavigate={navigate} />;
-      case 'farm_detail':        return <FarmsScreen             onNavigate={navigate} />;
-      case 'intervention':       return <InterventionScreen      onNavigate={navigate} />;
-      case 'insights':           return <InsightsScreen          onNavigate={navigate} />;
-      case 'alerts':             return <AlertsScreen            onNavigate={navigate} />;
-      case 'profile':            return <ProfileScreen           onNavigate={navigate} />;
-      case 'edit_profile':       return <EditProfileScreen       onNavigate={navigate} />;
-      case 'add_field':          return <AddFieldScreen          onNavigate={navigate} />;
-      case 'settings':           return <SettingsScreen          onNavigate={navigate} />;
-      case 'notification_settings': return <NotificationSettings onNavigate={navigate} />;
-      case 'help_support':       return <HelpSupportScreen       onNavigate={navigate} />;
-      case 'about':              return <AboutScreen             onNavigate={navigate} />;
-      case 'farm_details_config':return <FarmDetailsConfigScreen onNavigate={navigate} />;
-      default:                   return <HomeScreen             onNavigate={navigate} />;
+      case 'home':                  return <HomeScreen             onNavigate={navigate} />;
+      case 'farms':                 return <FarmsListScreen         onNavigate={navigate} />;
+      case 'farm_detail':           return <FarmsScreen             onNavigate={navigate} />;
+      case 'intervention':          return <InterventionScreen      onNavigate={navigate} />;
+      case 'insights':              return <InsightsScreen          onNavigate={navigate} />;
+      case 'alerts':                return <AlertsScreen            onNavigate={navigate} />;
+      case 'profile':               return <ProfileScreen           onNavigate={navigate} />;
+      case 'edit_profile':          return <EditProfileScreen       onNavigate={navigate} />;
+      case 'add_field':             return <AddFieldScreen          onNavigate={navigate} />;
+      case 'settings':              return <SettingsScreen          onNavigate={navigate} />;
+      case 'notification_settings': return <NotificationSettings    onNavigate={navigate} />;
+      case 'help_support':          return <HelpSupportScreen       onNavigate={navigate} />;
+      case 'about':                 return <AboutScreen             onNavigate={navigate} />;
+      case 'farm_details_config':   return <FarmDetailsConfigScreen onNavigate={navigate} />;
+      default:                      return <HomeScreen             onNavigate={navigate} />;
     }
   };
 
   const showNav = phase === 'app' && BOTTOM_NAV_SCREENS.includes(screen);
 
   return (
-    <div className="app-container">
-      {/* 
-        Note: We use flex-direction: row-reverse in CSS for desktop, 
-        so rendering <main> then <nav> means <nav> appears on the left on desktop! 
-      */}
-      <main className="app-main" style={{ paddingTop: phase === 'app' ? 'var(--safe-top)' : 0 }}>
+    <div className="app-shell-desktop" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100vw',
+      height: '100dvh',
+      overflow: 'hidden',
+      background: 'var(--cs-bg)',
+    }}>
+      {/* Main content area — fills all space beside the nav */}
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
         {renderScreen()}
-      </main>
+      </div>
 
+      {/* Bottom nav (mobile) / Left sidebar (desktop via CSS) */}
       {showNav && (
         <nav className="app-nav">
           {NAV_ITEMS.map(({ key, Icon, label, badge }) => {
             const active = screen === key;
             return (
-              <button key={key} onClick={() => navigate(key)} className={`nav-item ${active ? 'active' : ''}`}>
-                <div style={{ position:'relative' }}>
+              <button
+                key={key}
+                onClick={() => navigate(key)}
+                className={`nav-item ${active ? 'active' : ''}`}
+              >
+                <div style={{ position: 'relative' }}>
                   <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-                  {badge && <span style={{ position:'absolute', top:-4, right:-4, width:8, height:8, background:'var(--cs-danger)', borderRadius:'50%', border:'2px solid var(--cs-card)' }} />}
+                  {badge && (
+                    <span style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 8, height: 8,
+                      background: 'var(--cs-danger)',
+                      borderRadius: '50%',
+                      border: '2px solid var(--cs-card)',
+                    }} />
+                  )}
                 </div>
                 <span>{label}</span>
               </button>
@@ -96,11 +121,25 @@ function AppNavigation() {
   );
 }
 
+import { Toaster } from 'react-hot-toast';
+
 export default function App() {
   return (
     <ThemeProvider>
       <I18nProvider>
         <AppNavigation />
+        <Toaster 
+          position="bottom-center"
+          toastOptions={{
+            style: {
+              background: 'var(--cs-card)',
+              color: 'var(--cs-text)',
+              border: '1px solid var(--cs-border)',
+              borderRadius: '12px',
+              fontWeight: 600,
+            },
+          }}
+        />
       </I18nProvider>
     </ThemeProvider>
   );
