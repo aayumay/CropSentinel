@@ -85,11 +85,12 @@ export const InterventionDetailScreen = ({ navigation }) => {
     // Simulate loading for 800ms
     setTimeout(async () => {
       setIsApplying(false);
+      sheetTranslateY.value = 500;
       setShowSheet(true);
       
       // Animate in
-      overlayOpacity.value = withTiming(0.5, { duration: 300 });
-      sheetTranslateY.value = withSpring(0, { damping: 15 });
+      overlayOpacity.value = withTiming(0.4, { duration: 250 });
+      sheetTranslateY.value = withSpring(0, { damping: 24, stiffness: 150 });
       
       if (isDemoMode) {
         applyIntervention(3); // Sugarcane farm
@@ -173,7 +174,7 @@ export const InterventionDetailScreen = ({ navigation }) => {
   useEffect(() => {
     if (details) {
       confidenceProgress.value = 0;
-      confidenceProgress.value = withTiming(details.confidence, { duration: 1000 });
+      confidenceProgress.value = withTiming(details.confidence, { duration: 350 });
     }
   }, [details]);
 

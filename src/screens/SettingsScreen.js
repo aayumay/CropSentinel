@@ -10,6 +10,7 @@ import { translations } from '../constants/translations';
 
 export const SettingsScreen = ({ navigation }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const { 
     isDemoMode, 
     setDemoMode, 
@@ -86,31 +87,50 @@ export const SettingsScreen = ({ navigation }) => {
             />
           </View>
           
-          <TouchableOpacity 
-            style={styles.preferenceItem}
-            onPress={() => {
-              Alert.alert(
-                "Select Language / भाषा चुनें",
-                "Choose your preferred language:",
-                [
-                  { text: "English", onPress: () => setLanguage('en') },
-                  { text: "हिंदी (Hindi)", onPress: () => setLanguage('hi') },
-                  { text: "Cancel / रद्द करें", style: "cancel" }
-                ]
-              );
-            }}
-          >
-            <View style={styles.menuLeft}>
-              <View style={styles.menuIconCircle}>
-                <Feather name="globe" size={18} color={materialTheme.colors.primary} />
+          <View style={styles.dropdownContainer}>
+            <TouchableOpacity 
+              style={styles.preferenceItem}
+              onPress={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIconCircle}>
+                  <Feather name="globe" size={18} color={materialTheme.colors.primary} />
+                </View>
+                <View style={styles.flexShrink1}>
+                  <Text style={styles.menuLabel}>Language / भाषा</Text>
+                  <Text style={styles.preferenceSublabel}>{language === 'en' ? 'English' : 'हिन्दी'}</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.menuLabel}>Language / भाषा</Text>
-                <Text style={styles.preferenceSublabel}>{language === 'en' ? 'English' : 'हिंदी (Hindi)'}</Text>
+              <Feather name={isLangDropdownOpen ? "chevron-up" : "chevron-down"} size={18} color={materialTheme.colors.textSecondary} />
+            </TouchableOpacity>
+            {isLangDropdownOpen && (
+              <View style={styles.dropdownOptions}>
+                <TouchableOpacity
+                  style={[styles.dropdownOption, language === 'en' && styles.dropdownOptionActive]}
+                  onPress={() => {
+                    setLanguage('en');
+                    setIsLangDropdownOpen(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dropdownOptionText, language === 'en' && styles.dropdownOptionTextActive]}>English</Text>
+                  {language === 'en' && <Feather name="check" size={16} color={materialTheme.colors.primary} />}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dropdownOption, language === 'hi' && styles.dropdownOptionActive, { borderBottomWidth: 0 }]}
+                  onPress={() => {
+                    setLanguage('hi');
+                    setIsLangDropdownOpen(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dropdownOptionText, language === 'hi' && styles.dropdownOptionTextActive]}>हिन्दी</Text>
+                  {language === 'hi' && <Feather name="check" size={16} color={materialTheme.colors.primary} />}
+                </TouchableOpacity>
               </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={materialTheme.colors.textSecondary} />
-          </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={[styles.menuCard, { marginTop: materialTheme.spacing.md }]}>
@@ -338,5 +358,42 @@ const styles = StyleSheet.create({
   },
   flexShrink1: {
     flexShrink: 1,
+  },
+  dropdownContainer: {
+    width: '100%',
+  },
+  dropdownOptions: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E0',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F0',
+  },
+  dropdownOptionActive: {
+    backgroundColor: '#F3F4F6',
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  dropdownOptionTextActive: {
+    color: materialTheme.colors.primary,
+    fontWeight: '600',
   },
 });

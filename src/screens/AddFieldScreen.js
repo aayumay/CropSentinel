@@ -4,6 +4,49 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { materialTheme } from '../theme';
 
+const DropdownSelector = ({ label, value, options, onSelect, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TouchableOpacity 
+        style={styles.fieldSelect} 
+        onPress={() => setIsOpen(!isOpen)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.fieldSelectText, value && { color: materialTheme.colors.onSurface }]}>
+          {value || placeholder}
+        </Text>
+        <Feather name={isOpen ? "chevron-up" : "chevron-down"} size={18} color={materialTheme.colors.textSecondary} />
+      </TouchableOpacity>
+      {isOpen && (
+        <View style={styles.dropdownOptions}>
+          {options.map((opt, idx) => (
+            <TouchableOpacity
+              key={opt}
+              style={[
+                styles.dropdownOption, 
+                value === opt && styles.dropdownOptionActive,
+                idx === options.length - 1 && { borderBottomWidth: 0 }
+              ]}
+              onPress={() => {
+                onSelect(opt);
+                setIsOpen(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.dropdownOptionText, value === opt && styles.dropdownOptionTextActive]}>
+                {opt}
+              </Text>
+              {value === opt && <Feather name="check" size={16} color={materialTheme.colors.primary} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
 export const AddFieldScreen = ({ navigation, route }) => {
   const farmToEdit = route.params?.farm;
   const isEditMode = !!farmToEdit;
@@ -13,94 +56,37 @@ export const AddFieldScreen = ({ navigation, route }) => {
   const [fieldArea, setFieldArea] = useState('');
   const [soilType, setSoilType] = useState('');
   const [location, setLocation] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (isEditMode) {
       setFieldName(farmToEdit.name || '');
-      setCropType(farmToEdit.cropType || farmToEdit.crop_type || '');
+      setCropType(farmToEdit.cropType || 'Sugarcane');
       setFieldArea(farmToEdit.area || '5.0');
-      setSoilType(farmToEdit.soilType || 'Alluvial');
-      setLocation(farmToEdit.location || 'Marathwada (19.87, 75.34)');
+      setSoilType(farmToEdit.soilType || 'Clay');
+      setLocation(farmToEdit.location || 'Maharashtra');
     }
   }, [farmToEdit]);
 
-  const handleSelectCrop = () => {
-    Alert.alert(
-      "Select Crop Type",
-      "Choose the crop planted in this field:",
-      [
-        { text: "Wheat", onPress: () => setCropType("Wheat") },
-        { text: "Rice", onPress: () => setCropType("Rice") },
-        { text: "Corn", onPress: () => setCropType("Corn") },
-        { text: "Sugarcane", onPress: () => setCropType("Sugarcane") },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
-  const handleSelectSoil = () => {
-    Alert.alert(
-      "Select Soil Type",
-      "Choose the soil type of this field:",
-      [
-        { text: "Alluvial", onPress: () => setSoilType("Alluvial") },
-        { text: "Clayey", onPress: () => setSoilType("Clayey") },
-        { text: "Sandy", onPress: () => setSoilType("Sandy") },
-        { text: "Loamy", onPress: () => setSoilType("Loamy") },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
-  const handleSelectLocation = () => {
-    Alert.alert(
-      "Select Location",
-      "Simulate selecting location on satellite map:",
-      [
-        { text: "Use Punjab GPS Location", onPress: () => setLocation("Punjab (30.90, 75.85)") },
-        { text: "Use Kaveri Delta GPS", onPress: () => setLocation("Tamil Nadu (10.91, 79.36)") },
-        { text: "Use Marathwada GPS", onPress: () => setLocation("Maharashtra (19.87, 75.34)") },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
   const handleSave = () => {
     if (!fieldName.trim()) {
-      Alert.alert("ValidationError", "Please enter a field name.");
+      Alert.alert("Validation Error", "Please enter a farm name.");
       return;
     }
     if (!cropType) {
-      Alert.alert("ValidationError", "Please select a crop type.");
-      return;
-    }
-    if (!fieldArea.trim() || isNaN(Number(fieldArea))) {
-      Alert.alert("ValidationError", "Please enter a valid numeric area in acres.");
+      Alert.alert("Validation Error", "Please select a crop type.");
       return;
     }
     if (!soilType) {
-      Alert.alert("ValidationError", "Please select a soil type.");
+      Alert.alert("Validation Error", "Please select a soil type.");
       return;
     }
     if (!location) {
-      Alert.alert("ValidationError", "Please select a location.");
+      Alert.alert("Validation Error", "Please select a location.");
       return;
     }
 
-    // Success State
-    const successMsg = isEditMode ? "Farm updated successfully." : "Farm added successfully.";
-    Alert.alert(
-      "Success",
-      successMsg,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            navigation.goBack();
-          }
-        }
-      ]
-    );
+    setShowSuccess(true);
   };
 
   return (
@@ -113,27 +99,31 @@ export const AddFieldScreen = ({ navigation, route }) => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Field Name</Text>
+          <Text style={styles.fieldLabel}>Farm Name</Text>
           <TextInput
             style={styles.fieldInput}
             placeholder="e.g., North Field"
             placeholderTextColor={materialTheme.colors.textSecondary}
             value={fieldName}
             onChangeText={setFieldName}
+            autoCorrect={false}
+            autoCapitalize="words"
           />
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Select Crop Type</Text>
-          <TouchableOpacity style={styles.fieldSelect} onPress={handleSelectCrop}>
-            <Text style={[styles.fieldSelectText, cropType && { color: materialTheme.colors.onSurface }]}>
-              {cropType || "Choose crop"}
-            </Text>
-            <Feather name="chevron-down" size={18} color={materialTheme.colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <DropdownSelector
+          label="Select Crop Type"
+          value={cropType}
+          options={["Wheat", "Rice", "Corn", "Sugarcane"]}
+          onSelect={setCropType}
+          placeholder="Choose crop"
+        />
 
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Field Area (Acres)</Text>
@@ -147,33 +137,53 @@ export const AddFieldScreen = ({ navigation, route }) => {
           />
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Soil Type</Text>
-          <TouchableOpacity style={styles.fieldSelect} onPress={handleSelectSoil}>
-            <Text style={[styles.fieldSelectText, soilType && { color: materialTheme.colors.onSurface }]}>
-              {soilType || "Choose soil type"}
-            </Text>
-            <Feather name="chevron-down" size={18} color={materialTheme.colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <DropdownSelector
+          label="Soil Type"
+          value={soilType}
+          options={["Sandy", "Clay", "Loamy", "Silty"]}
+          onSelect={setSoilType}
+          placeholder="Choose soil type"
+        />
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Location</Text>
-          <TouchableOpacity style={styles.fieldSelect} onPress={handleSelectLocation}>
-            <View style={styles.fieldSelectLeft}>
-              <Feather name="map-pin" size={16} color={materialTheme.colors.textSecondary} />
-              <Text style={[styles.fieldSelectText, location && { color: materialTheme.colors.onSurface }]}>
-                {location || "Select on map"}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={materialTheme.colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <DropdownSelector
+          label="Location"
+          value={location}
+          options={["Maharashtra", "Punjab", "Karnataka", "Tamil Nadu"]}
+          onSelect={setLocation}
+          placeholder="Select location"
+        />
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
           <Text style={styles.saveBtnText}>{isEditMode ? "Update Farm" : "Save Field"}</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {showSuccess && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.successIconContainer}>
+              <Feather name="check" size={32} color="#FFFFFF" />
+            </View>
+            <Text style={styles.modalTitle}>
+              {isEditMode ? "Farm Updated" : "Farm Added"}
+            </Text>
+            <Text style={styles.modalBody}>
+              {isEditMode 
+                ? "Your farm has been updated successfully." 
+                : "Your farm has been added successfully."}
+            </Text>
+            <TouchableOpacity 
+              style={styles.modalBtn} 
+              onPress={() => {
+                setShowSuccess(false);
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.modalBtnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -243,11 +253,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  fieldSelectLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: materialTheme.spacing.sm,
-  },
   fieldSelectText: {
     fontSize: 15,
     color: materialTheme.colors.textSecondary,
@@ -262,6 +267,92 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  dropdownOptions: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E0',
+    borderRadius: 12,
+    marginTop: 4,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F0',
+  },
+  dropdownOptionActive: {
+    backgroundColor: '#F3F4F6',
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  dropdownOptionTextActive: {
+    color: materialTheme.colors.primary,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    width: 300,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  successIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  modalBody: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  modalBtn: {
+    width: '100%',
+    backgroundColor: '#267D32',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700',
   },
 });

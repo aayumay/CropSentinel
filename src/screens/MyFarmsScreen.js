@@ -19,7 +19,7 @@ const FadeInCard = ({ children, delay = 0 }) => {
   React.useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: 1,
-      duration: 500,
+      duration: 300,
       delay,
       useNativeDriver: true,
     }).start();
@@ -31,7 +31,7 @@ const FadeInCard = ({ children, delay = 0 }) => {
       {
         translateY: animatedValue.interpolate({
           inputRange: [0, 1],
-          outputRange: [15, 0],
+          outputRange: [8, 0],
         }),
       },
     ],
@@ -103,6 +103,7 @@ const SkeletonCard = () => (
 export const MyFarmsScreen = ({ navigation }) => {
   const { isDemoMode, isDroughtSimulated, language } = useDemoState();
   const t = translations[language] || translations.en;
+  const scrollViewRef = React.useRef(null);
   const [farms, setFarms] = useState([]);
   const [summary, setSummary] = useState(null);
   const [agents, setAgents] = useState([]);
@@ -277,6 +278,7 @@ export const MyFarmsScreen = ({ navigation }) => {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -432,11 +434,11 @@ export const MyFarmsScreen = ({ navigation }) => {
 
       {/* Bottom Nav Bar */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => navigation.navigate('MyFarms')}>
+        <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}>
           <Feather name="home" size={20} color={materialTheme.colors.primary} />
           <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>{t.home}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}>
           <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
           <Text style={styles.bottomNavText}>{t.farms}</Text>
         </TouchableOpacity>

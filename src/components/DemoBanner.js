@@ -11,7 +11,7 @@ export const DemoBanner = () => {
   useEffect(() => {
     if (isDemoMode) {
       // Slide down entrance
-      translateY.value = withSpring(0, { damping: 12 });
+      translateY.value = withTiming(0, { duration: 300 });
     } else {
       // Slide up and hide
       translateY.value = withTiming(-60, { duration: 250 });

@@ -16,7 +16,7 @@ const FadeInCard = ({ children, delay = 0 }) => {
   React.useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: 1,
-      duration: 500,
+      duration: 300,
       delay,
       useNativeDriver: true,
     }).start();
@@ -28,7 +28,7 @@ const FadeInCard = ({ children, delay = 0 }) => {
       {
         translateY: animatedValue.interpolate({
           inputRange: [0, 1],
-          outputRange: [15, 0],
+          outputRange: [8, 0],
         }),
       },
     ],

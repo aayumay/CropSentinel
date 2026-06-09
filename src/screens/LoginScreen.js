@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { materialTheme } from '../theme';
@@ -9,6 +9,22 @@ export const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleForgotPress = () => {
+    Alert.alert(
+      "Forgot Password",
+      "A password reset link has been simulated and sent to your email address.",
+      [{ text: "OK" }]
+    );
+  };
+
+  const handleSocialPress = (platform) => {
+    Alert.alert(
+      "Social Integration",
+      `Simulating ${platform} OAuth integration for hackathon demo.`,
+      [{ text: "OK" }]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -55,7 +71,7 @@ export const LoginScreen = ({ navigation }) => {
             <Text style={styles.inputHint}>••••••••••••</Text>
           </View>
 
-          <TouchableOpacity style={styles.forgotBtn}>
+          <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPress}>
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -66,12 +82,12 @@ export const LoginScreen = ({ navigation }) => {
           <Text style={styles.orText}>or continue with</Text>
 
           <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialBtn}>
+            <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialPress("Google")}>
               <Text style={styles.socialText}>G</Text>
               <Text style={styles.socialLabel}>Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn}>
-              <Text style={styles.socialText}></Text>
+            <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialPress("Apple")}>
+              <Feather name="apple" size={16} color={materialTheme.colors.onSurface} />
               <Text style={styles.socialLabel}>Apple</Text>
             </TouchableOpacity>
           </View>
