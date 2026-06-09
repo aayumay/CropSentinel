@@ -9,7 +9,8 @@ import { AndroidImportance } from 'expo-notifications/build/NotificationChannelM
 // Configure how notifications are handled when the app is open
 setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -19,12 +20,16 @@ export const registerForPushNotificationsAsync = async () => {
   let token = null;
 
   if (Platform.OS === 'android') {
-    await setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#4A7C2F',
-    });
+    try {
+      await setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#4A7C2F',
+      });
+    } catch (error) {
+      console.warn('Failed to set notification channel:', error);
+    }
   }
 
   const { status: existingStatus } = await getPermissionsAsync();

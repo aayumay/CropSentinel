@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Polyline, Circle, Line as SvgLine, Text as SvgText } from 'react-native-svg';
 
 import { materialTheme } from '../theme';
 import { crops } from '../assets';
@@ -9,20 +10,106 @@ import { fetchDashboard, getNdviHistory, getMarketHistory } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 
-import { CartesianChart, Line, Scatter } from 'victory-native';
-import { matchFont } from '@shopify/react-native-skia';
 
-const font = matchFont({
-  fontFamily: 'sans-serif',
-  fontSize: 10,
-  fontWeight: 'normal',
-});
 
 const getHealthColor = (score) => {
   if (score >= 80) return materialTheme.colors.success;
   if (score >= 60) return materialTheme.colors.warning;
   return materialTheme.colors.error;
 };
+
+// Pure SVG sparkline chart — zero gesture-handler/reanimated dependency
+const SvgSparkline = ({ data, labels, color, fallbackText, formatValue }) => {
+  const W = Dimensions.get('window').width - 80; // card padding
+  const H = 120;
+  const PAD_LEFT = 36;
+  const PAD_RIGHT = 8;
+  const PAD_TOP = 10;
+  const PAD_BOTTOM = 30;
+  const chartW = W - PAD_LEFT - PAD_RIGHT;
+  const chartH = H - PAD_TOP - PAD_BOTTOM;
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={{ height: H, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: materialTheme.colors.textSecondary, fontSize: 13 }}>{fallbackText}</Text>
+      </View>
+    );
+  }
+
+  const minVal = Math.min(...data);
+  const maxVal = Math.max(...data);
+  const range = maxVal - minVal || 1;
+
+  const toX = (i) => PAD_LEFT + (i / (data.length - 1)) * chartW;
+  const toY = (v) => PAD_TOP + chartH - ((v - minVal) / range) * chartH;
+
+  const points = data.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+
+  return (
+    <Svg width={W} height={H}>
+      {/* Baseline */}
+      <SvgLine
+        x1={PAD_LEFT} y1={PAD_TOP + chartH}
+        x2={PAD_LEFT + chartW} y2={PAD_TOP + chartH}
+        stroke={materialTheme.colors.outline} strokeWidth={1}
+      />
+      {/* Left axis */}
+      <SvgLine
+        x1={PAD_LEFT} y1={PAD_TOP}
+        x2={PAD_LEFT} y2={PAD_TOP + chartH}
+        stroke={materialTheme.colors.outline} strokeWidth={1}
+      />
+      {/* Sparkline */}
+      <Polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {/* Dots + value labels */}
+      {data.map((v, i) => (
+        <React.Fragment key={i}>
+          <Circle cx={toX(i)} cy={toY(v)} r={3.5} fill={color} />
+          {(i === 0 || i === data.length - 1 || i === Math.floor(data.length / 2)) && (
+            <SvgText
+              x={toX(i)}
+              y={toY(v) - 8}
+              fontSize={9}
+              fill={materialTheme.colors.textSecondary}
+              textAnchor="middle"
+            >
+              {formatValue ? formatValue(v) : v}
+            </SvgText>
+          )}
+        </React.Fragment>
+      ))}
+      {/* X-axis labels */}
+      {labels.map((label, i) => (
+        <SvgText
+          key={`lbl-${i}`}
+          x={toX(i)}
+          y={H - 4}
+          fontSize={9}
+          fill={materialTheme.colors.textSecondary}
+          textAnchor="middle"
+        >
+          {label}
+        </SvgText>
+      ))}
+      {/* Y-axis min/max */}
+      <SvgText x={PAD_LEFT - 2} y={PAD_TOP + 4} fontSize={9} fill={materialTheme.colors.textSecondary} textAnchor="end">
+        {formatValue ? formatValue(maxVal) : maxVal}
+      </SvgText>
+      <SvgText x={PAD_LEFT - 2} y={PAD_TOP + chartH} fontSize={9} fill={materialTheme.colors.textSecondary} textAnchor="end">
+        {formatValue ? formatValue(minVal) : minVal}
+      </SvgText>
+    </Svg>
+  );
+};
+
 
 export const FarmDetailScreen = ({ navigation, route }) => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -234,39 +321,13 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             <Text style={styles.trendValue}>{farmData.ndvi}</Text>
           </View>
           <View style={styles.chartContainer}>
-            {ndviData.length > 0 ? (
-              <CartesianChart
-                data={ndviData}
-                xKey="day"
-                yKeys={["value"]}
-                axisOptions={{
-                  font,
-                  lineColor: materialTheme.colors.outline,
-                  labelColor: materialTheme.colors.textSecondary,
-                  labelOffset: 4,
-                }}
-              >
-                {({ points }) => (
-                  <>
-                    <Line
-                      points={points.value}
-                      color={materialTheme.colors.primary}
-                      strokeWidth={3}
-                      curveType="natural"
-                    />
-                    <Scatter
-                      points={points.value}
-                      radius={4}
-                      color={materialTheme.colors.primary}
-                      shape="circle"
-                      style="fill"
-                    />
-                  </>
-                )}
-              </CartesianChart>
-            ) : (
-              <Text style={styles.noDataText}>No NDVI trend data available</Text>
-            )}
+            <SvgSparkline
+              data={ndviData.length > 0 ? ndviData.map(d => d.value) : []}
+              labels={ndviData.map(d => d.day)}
+              color={materialTheme.colors.primary}
+              fallbackText="No NDVI trend data available"
+              formatValue={(v) => v.toFixed(2)}
+            />
           </View>
         </View>
 
@@ -278,39 +339,13 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             </Text>
           </View>
           <View style={styles.chartContainer}>
-            {marketData.length > 0 ? (
-              <CartesianChart
-                data={marketData}
-                xKey="day"
-                yKeys={["price"]}
-                axisOptions={{
-                  font,
-                  lineColor: materialTheme.colors.outline,
-                  labelColor: materialTheme.colors.textSecondary,
-                  labelOffset: 4,
-                }}
-              >
-                {({ points }) => (
-                  <>
-                    <Line
-                      points={points.price}
-                      color={materialTheme.colors.tertiary}
-                      strokeWidth={3}
-                      curveType="natural"
-                    />
-                    <Scatter
-                      points={points.price}
-                      radius={4}
-                      color={materialTheme.colors.tertiary}
-                      shape="circle"
-                      style="fill"
-                    />
-                  </>
-                )}
-              </CartesianChart>
-            ) : (
-              <Text style={styles.noDataText}>No mandi price data available</Text>
-            )}
+            <SvgSparkline
+              data={marketData.length > 0 ? marketData.map(d => d.price) : []}
+              labels={marketData.map(d => d.day)}
+              color={materialTheme.colors.tertiary}
+              fallbackText="No mandi price data available"
+              formatValue={(v) => `₹${(v/1000).toFixed(1)}k`}
+            />
           </View>
         </View>
 
