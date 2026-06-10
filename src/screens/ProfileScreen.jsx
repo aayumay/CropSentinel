@@ -19,7 +19,7 @@ export default function ProfileScreen({ onNavigate }) {
   const [email] = useState('ramesh@example.com');
 
   return (
-    <div className="dashboard-container" style={{ display:'flex', flexDirection:'column', minHeight:'100%', background:'var(--cs-bg)', paddingBottom:32 }}>
+    <div className="dashboard-container" style={{ display:'flex', flexDirection:'column', minHeight:'100%', background:'var(--cs-bg)', paddingBottom:120, overflowY:'auto' }}>
       {/* Header */}
       <div style={{ padding:'24px 20px 12px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <h1 style={{ fontSize:22, fontWeight:900, color:'var(--cs-text)', margin:0 }}>{t('profile')}</h1>

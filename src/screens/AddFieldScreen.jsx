@@ -161,8 +161,8 @@ function MapPicker({ position, setPosition, gpsPos, flyTo, setFlyTo, gpsLoading,
       {/* THE MAP — explicit height so Leaflet renders */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <MapContainer
-          center={position ? [position.lat, position.lng] : gpsPos ? [gpsPos.lat, gpsPos.lng] : [22.3072, 73.1812]}
-          zoom={13}
+          center={position ? [position.lat, position.lng] : gpsPos ? [gpsPos.lat, gpsPos.lng] : [22.2887, 73.3634]}
+          zoom={15}
           style={{ width: '100%', height: '100%', minHeight: '400px' }}
           zoomControl={true}
           attributionControl={false}
@@ -288,26 +288,17 @@ export default function AddFieldScreen({ onNavigate }) {
 
   /* ── GPS location ── */
   const handleGetLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGpsError('Geolocation not supported by your browser.');
-      return;
-    }
     setGpsLoading(true);
     setGpsError('');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setGpsPos(latlng);
-        setPosition(latlng);
-        setFlyTo(latlng);
-        setGpsLoading(false);
-      },
-      () => {
-        setGpsError('Unable to access GPS. Please tap the map to pin manually.');
-        setGpsLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    
+    // As per user request: click "My Location" to immediately focus on Parul University
+    setTimeout(() => {
+      const parulLatlng = { lat: 22.2887, lng: 73.3634 };
+      setGpsPos(parulLatlng);
+      setPosition(parulLatlng);
+      setFlyTo(parulLatlng);
+      setGpsLoading(false);
+    }, 400); // Slight delay for UX
   }, []);
 
   const handleSave = async () => {

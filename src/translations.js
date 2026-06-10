@@ -17,7 +17,7 @@ export const translations = {
     good_morning: 'Good Morning,', farmer: 'Farmer 🌿',
     heres_whats: "Here's what's happening on your farms",
     my_farms: 'My Farms', farms_alert: '{n} Farms • {a} Alert',
-    add_new_field: '+ Add New Field',
+    add_new_field: 'Add New Field',
     temp: 'Temp', humidity: 'Humidity', rain_chance: 'Rain Chance', wind: 'Wind',
     // Farm cards
     north_field: 'North Field', south_field: 'South Field',
@@ -116,7 +116,7 @@ export const translations = {
     good_morning: 'सुप्रभात,', farmer: 'किसान 🌿',
     heres_whats: 'आपके खेतों में क्या हो रहा है',
     my_farms: 'मेरे खेत', farms_alert: '{n} खेत • {a} अलर्ट',
-    add_new_field: '+ नया खेत जोड़ें',
+    add_new_field: 'नया खेत जोड़ें',
     temp: 'तापमान', humidity: 'नमी', rain_chance: 'बारिश की संभावना', wind: 'हवा',
     // Farm cards
     north_field: 'उत्तरी खेत', south_field: 'दक्षिणी खेत',
@@ -211,7 +211,7 @@ export const translations = {
     good_morning: 'સુપ્રભાત,', farmer: 'ખેડૂત 🌿',
     heres_whats: 'તમારા ખેતરોમાં શું થઈ રહ્યું છે',
     my_farms: 'મારા ખેતરો', farms_alert: '{n} ખેતરો • {a} એલર્ટ',
-    add_new_field: '+ નવું ખેતર ઉમેરો',
+    add_new_field: 'નવું ખેતર ઉમેરો',
     temp: 'તાપમાન', humidity: 'ભેજ', rain_chance: 'વરસાદની શક્યતા', wind: 'પવન',
     // Farm cards
     north_field: 'ઉત્તર ખેતર', south_field: 'દક્ષિણ ખેતર',

@@ -24,7 +24,19 @@ const card = {
 /* ══════════════════════════════════════════════════════════════════
    PREMIUM SVG FIELD MAP (Kept but adapted for a standard look)
 ══════════════════════════════════════════════════════════════════ */
-function FieldHeatmap({ ndviScore, crisis }) {
+function FieldHeatmap({ ndviScore, crisis, health }) {
+  const [activeRisk, setActiveRisk] = React.useState(null);
+
+  const risks = [];
+  if (crisis) {
+    risks.push({ cx: 120, cy: 80, r: 45, type: 'stress', label: 'Drought Risk' });
+    risks.push({ cx: 280, cy: 150, r: 60, type: 'stress', label: 'Water Stress Detected' });
+    risks.push({ cx: 180, cy: 160, r: 40, type: 'warn', label: 'Disease Risk' });
+  } else if (health < 80) {
+    risks.push({ cx: 340, cy: 160, r: 45, type: 'warn', label: 'Low Crop Health' });
+    risks.push({ cx: 120, cy: 100, r: 40, type: 'warn', label: 'Pest Infestation Risk' });
+  }
+
   // A sleek geometric SVG representation of a farm field
   return (
     <div style={{ position:'relative', width:'100%', height:240, background:'#203023', borderRadius:'inherit', overflow:'hidden' }}>
@@ -66,22 +78,71 @@ function FieldHeatmap({ ndviScore, crisis }) {
         <line x1="200" y1="30" x2="200" y2="200" stroke="#1a3d0e" strokeWidth="1" strokeDasharray="4 4" />
         <line x1="30" y1="105" x2="370" y2="125" stroke="#1a3d0e" strokeWidth="1" strokeDasharray="4 4" />
 
-        {/* Heatmap overlay based on crisis state */}
-        {crisis ? (
-          <>
-            <circle cx="120" cy="80" r="45" fill="url(#stress)" filter="url(#glow)" />
-            <circle cx="280" cy="150" r="60" fill="url(#stress)" filter="url(#glow)" />
-            <circle cx="180" cy="160" r="40" fill="url(#warn)" filter="url(#glow)" />
-            <circle cx="300" cy="60" r="30" fill="url(#healthy)" filter="url(#glow)" />
-          </>
-        ) : (
-          <>
-            <circle cx="100" cy="100" r="60" fill="url(#healthy)" filter="url(#glow)" />
-            <circle cx="260" cy="120" r="80" fill="url(#healthy)" filter="url(#glow)" />
-            <circle cx="340" cy="160" r="40" fill="url(#warn)" filter="url(#glow)" />
-          </>
-        )}
+        {/* Base healthy layer */}
+        <circle cx="100" cy="100" r="60" fill="url(#healthy)" filter="url(#glow)" />
+        <circle cx="260" cy="120" r="80" fill="url(#healthy)" filter="url(#glow)" />
+        <circle cx="300" cy="60" r="40" fill="url(#healthy)" filter="url(#glow)" />
+
+        {/* Dynamic Risk Overlay */}
+        {risks.map((risk, i) => (
+          <circle
+            key={i}
+            cx={risk.cx}
+            cy={risk.cy}
+            r={risk.r}
+            fill={`url(#${risk.type})`}
+            filter="url(#glow)"
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => {
+              const rect = e.currentTarget.parentElement.getBoundingClientRect();
+              setActiveRisk({ label: risk.label, x: e.clientX - rect.left, y: e.clientY - rect.top });
+            }}
+          />
+        ))}
       </svg>
+      
+      {/* Interactive Tooltip Overlay */}
+      {activeRisk && (
+        <div style={{
+          position: 'absolute',
+          left: activeRisk.x,
+          top: activeRisk.y,
+          transform: 'translate(-50%, -100%)',
+          background: 'var(--cs-card)',
+          border: '1px solid var(--cs-border)',
+          color: 'var(--cs-danger)',
+          padding: '8px 14px',
+          borderRadius: '12px',
+          fontSize: '13px',
+          fontWeight: 800,
+          whiteSpace: 'nowrap',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          zIndex: 20,
+          marginTop: '-12px',
+          pointerEvents: 'none'
+        }}>
+          ⚠️ {activeRisk.label}
+          <div style={{
+            position: 'absolute',
+            bottom: '-6px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 0,
+            height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderTop: '6px solid var(--cs-border)',
+          }} />
+        </div>
+      )}
+
+      {/* Dismiss label on click elsewhere */}
+      {activeRisk && (
+        <div 
+          style={{ position: 'absolute', inset: 0, zIndex: 10 }}
+          onClick={() => setActiveRisk(null)}
+        />
+      )}
       
       {/* Scanning Laser Animation */}
       <div className="laser-scan" />
@@ -246,7 +307,7 @@ function RightPanel({ farm }) {
         </div>
 
         {/* High-quality SVG Field Map */}
-        <FieldHeatmap ndviScore={farm.ndvi} crisis={crisis} />
+        <FieldHeatmap ndviScore={farm.ndvi} crisis={crisis} health={farm.health} />
 
         {/* Legend */}
         <div style={{ display:'flex', justifyContent:'space-between', padding:'12px 16px' }}>
@@ -263,7 +324,7 @@ function RightPanel({ farm }) {
         </div>
         <div>
           <p style={{ fontSize:10, fontWeight:700, color:'var(--cs-text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 4px' }}>Farm Coordinates</p>
-          <p style={{ fontSize:15, fontWeight:800, color:'var(--cs-text)', margin:0, fontFamily:'monospace' }}>22.3072°N, 73.1812°E</p>
+          <p style={{ fontSize:15, fontWeight:800, color:'var(--cs-text)', margin:0, fontFamily:'monospace' }}>22.2887°N, 73.3634°E</p>
         </div>
       </div>
     </div>
@@ -325,17 +386,12 @@ export default function FarmsScreen({ onNavigate }) {
       </div>
 
       {/* ── Body ── */}
-      <div style={{ flex:1, minHeight:0, overflowY:'auto', overflowX:'hidden', display:'flex', flexDirection:'column' }} className="desktop-scroll-wrapper">
-        <div className="desktop-split" style={{ display:'flex', padding:'20px', gap:'20px', width:'100%', height:'100%' }}>
-          
-          <div className="desktop-scroll-panel" style={{ flex: '0 0 400px', paddingBottom:'40px' }}>
-            <LeftPanel farm={farmData} onNavigate={onNavigate} />
-          </div>
-
-          <div className="desktop-scroll-panel" style={{ flex: 1, paddingBottom:'40px' }}>
-            <RightPanel farm={farmData} />
-          </div>
-
+      <div className="desktop-split desktop-split-2-1" style={{ flex:1, overflowY:'auto', padding:'20px', gap:'20px', WebkitOverflowScrolling:'touch' }}>
+        <div style={{ paddingBottom: 20 }}>
+          <LeftPanel farm={farmData} onNavigate={onNavigate} />
+        </div>
+        <div style={{ paddingBottom: 40 }}>
+          <RightPanel farm={farmData} />
         </div>
       </div>
     </div>

@@ -198,6 +198,10 @@ export const DemoProvider = ({ children }) => {
     mutateState({ isInterventionModalOpen: false });
   }, [mutateState]);
 
+  const setCurrentFarm = useCallback((farmId) => {
+    mutateState({ currentFarm: farmId });
+  }, [mutateState]);
+
   return (
     <DemoContext.Provider value={{ 
       state, 
@@ -205,6 +209,7 @@ export const DemoProvider = ({ children }) => {
       clearAlerts,
       openInterventionModal,
       closeInterventionModal,
+      setCurrentFarm,
       // Alias for backward compatibility with the Dashboard component
       triggerCrisisSimulation: triggerLiveAnalysis 
     }}>
