@@ -87,7 +87,39 @@ The mobile application implements a complete user journey with the following sta
 | PNG Conversion | **PASS** | Converted `satellite-farm.png` to a standard, non-progressive PNG format using PIL. Save path updated to `src/assets/satellitefarm.png` per requirements. |
 | Dimension Verification | **PASS** | Verified that the image dimension is 1024x1024 (well under 2048x2048 limit). |
 | Code Integration | **PASS** | Updated import reference in [FarmDetailScreen.js](file:///c:/Users/Yesh%20bind/OneDrive/Desktop/Faraway/src/screens/FarmDetailScreen.js#L349) to import `satellitefarm.png`. Removed deprecated `satellite-farm.png`. |
-| Expo Doctor | **PASS** | Ran `npx expo-doctor` and confirmed all 21 checks continue to pass successfully. |
+| Expo Doctor | **PASS** | Ran `npx expo-doctor` and confirmed all 21 checks continue to pass successfully.
+
+---
+
+## 🚜 Dedicated Farms Experience & Dashboard Redesign (D5 Final Polish)
+
+To resolve the duplicate content between the "Home" and "Farms" tabs, a complete UX pass was completed before Day 6.
+
+### 1. Dedicated Farms Screen (`FarmsScreen.js`)
+* **Purpose**: Acts as the centralized farm management hub.
+* **Layout**:
+  * **Header**: "My Farms" title and subtext "Manage and monitor all your fields."
+  * **Search Bar**: Material 3 styled input with dynamic search filtering by farm name.
+  * **Filter Chips**: Horizontal scrollable chips ("All", "Healthy", "Warning", "Critical") with custom logic (Healthy >= 75, Warning 50-74, Critical < 50).
+  * **Interaction Menu**: Three-dot vertical menu providing:
+    * *View Details*: Navigates to the deep-dive metrics.
+    * *Edit Farm*: Prefills `AddFieldScreen` fields for updates.
+    * *Delete Farm*: Local state array removal with confirmation alert dialog.
+  * **Extended FAB**: A bottom-right Floating Action Button styled with Material 3 patterns "+ Add Farm" to trigger field additions.
+
+### 2. Overview Dashboard Redesign (`MyFarmsScreen.js`)
+* **Purpose**: Converts the Home tab into a summary status dashboard.
+* **Layout**:
+  * **Critical Alerts Banner**: Displays counts of critical issues. Links directly to the alerts stream.
+  * **Highest-Risk Farm Card**: Automatically calculates the field with the lowest health score and features it prominently.
+  * **Latest AI Recommendation Card**: Displays action items, estimated cost, ROI, and AI confidence parameters.
+  * **AI Agent Core Widget**: Standardizes check-ins for Satellite, Weather, and Soil AI sub-agents.
+  * **No Duplication**: The list of all fields has been completely removed.
+
+### 3. Navigation Upgrades
+* Bottom navigation bars across `MyFarmsScreen`, `FarmsScreen`, `AlertsFeedScreen`, `InterventionDetailScreen`, `SettingsScreen`, and `FarmDetailScreen` have been fully linked to coordinate with the new screen hierarchy.
+* All routes pass bundling validation via `npx expo export` and health checks via `npx expo-doctor`.
+ |
 
 
 

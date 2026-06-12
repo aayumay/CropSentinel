@@ -425,7 +425,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
           <Text style={styles.bottomNavText}>{t.home}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => navigation.navigate('MyFarms')}>
+        <TouchableOpacity style={styles.bottomNavItemActive} onPress={() => navigation.navigate('Farms')}>
           <Feather name="layers" size={20} color={materialTheme.colors.primary} />
           <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>{t.farms}</Text>
         </TouchableOpacity>

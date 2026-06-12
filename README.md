@@ -4,6 +4,8 @@ CropSentinel is an AI-powered agricultural monitoring platform developed for the
 
 ## Features
 
+* Dedicated Farms Screen (search, status filter chips, three-dot actions)
+* Overview Dashboard (alerts summary, highest-risk highlight, latest AI recommendation card)
 * Farm health monitoring
 * Satellite farm visualization
 * Farm boundary rendering
@@ -31,7 +33,7 @@ CropSentinel is an AI-powered agricultural monitoring platform developed for the
 * [x] D2: Satellite Maps
 * [x] D3: Frontend Integration Scaffolding
 * [x] D4: Charts & Notifications
-* [x] D5: Demo Mode & Branding
+* [x] D5: Final UX Polish — Dedicated Farms & Dashboard
 * [ ] D6: Backend Integration & Release
 
 ## Setup Instructions

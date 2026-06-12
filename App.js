@@ -8,6 +8,7 @@ import { materialTheme } from './src/theme';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { MyFarmsScreen } from './src/screens/MyFarmsScreen';
+import { FarmsScreen } from './src/screens/FarmsScreen';
 import { FarmDetailScreen } from './src/screens/FarmDetailScreen';
 import { AlertsFeedScreen } from './src/screens/AlertsFeedScreen';
 import { InterventionDetailScreen } from './src/screens/InterventionDetailScreen';
@@ -50,6 +51,7 @@ export default function App() {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ animationEnabled: false }} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="MyFarms" component={MyFarmsScreen} />
+            <Stack.Screen name="Farms" component={FarmsScreen} />
             <Stack.Screen name="FarmDetail" component={FarmDetailScreen} />
             <Stack.Screen name="AlertsFeed" component={AlertsFeedScreen} />
             <Stack.Screen name="InterventionDetail" component={InterventionDetailScreen} />

@@ -342,7 +342,7 @@ export const InterventionDetailScreen = ({ navigation }) => {
           <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
           <Text style={styles.bottomNavText}>{t.home}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('MyFarms')}>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('Farms')}>
           <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
           <Text style={styles.bottomNavText}>{t.farms}</Text>
         </TouchableOpacity>
