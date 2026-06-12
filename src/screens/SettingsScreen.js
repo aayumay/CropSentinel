@@ -55,10 +55,10 @@ export const SettingsScreen = ({ navigation }) => {
   const t = translations[language] || translations.en;
 
   const menuItems = [
-    { icon: 'settings', label: t.accountSettings, route: 'AccountSettings' },
-    { icon: 'bell', label: t.notifSettingsTitle, route: 'NotificationSettings' },
-    { icon: 'help-circle', label: t.helpSupportHeader, route: 'HelpSupport' },
-    { icon: 'info', label: t.aboutHeader, route: 'About' },
+    { id: 'account', icon: 'settings', label: translations[language]?.settings?.account ?? translations.en.settings.account, route: 'AccountSettings' },
+    { id: 'notifications', icon: 'bell', label: translations[language]?.settings?.notifications ?? translations.en.settings.notifications, route: 'NotificationSettings' },
+    { id: 'help', icon: 'help-circle', label: translations[language]?.settings?.help ?? translations.en.settings.help, route: 'HelpSupport' },
+    { id: 'about', icon: 'info', label: translations[language]?.settings?.about ?? translations.en.settings.about, route: 'About' },
   ];
 
   const handleTabPress = (route) => {
@@ -71,7 +71,7 @@ export const SettingsScreen = ({ navigation }) => {
       <Image source={illustrations.settingsLeaves} style={styles.decorativeLeaf} resizeMode="contain" />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.profile}</Text>
+        <Text style={styles.headerTitle}>{translations[language]?.settings?.title ?? translations.en.settings.title}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -86,7 +86,7 @@ export const SettingsScreen = ({ navigation }) => {
         <View style={styles.menuCard}>
           {menuItems.map((item, index) => (
             <TouchableOpacity 
-              key={item.label} 
+              key={item.id} 
               style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]} 
               onPress={() => {
                 triggerHapticSelection();
@@ -137,7 +137,7 @@ export const SettingsScreen = ({ navigation }) => {
                   <Feather name="globe" size={18} color={materialTheme.colors.primary} />
                 </View>
                 <View style={styles.flexShrink1}>
-                  <Text style={styles.menuLabel}>{t.languageLabel}</Text>
+                  <Text style={styles.menuLabel}>{translations[language]?.settings?.language ?? translations.en.settings.language}</Text>
                   <Text style={styles.preferenceSublabel}>{language === 'en' ? 'English' : 'हिन्दी'}</Text>
                 </View>
               </View>
@@ -168,7 +168,7 @@ export const SettingsScreen = ({ navigation }) => {
 
         <View style={[styles.menuCard, { marginTop: materialTheme.spacing.md }]}>
           <View style={styles.demoHeaderContainer}>
-            <Text style={styles.demoTitle}>{t.demoMode}</Text>
+            <Text style={styles.demoTitle}>{translations[language]?.settings?.demoMode ?? translations.en.settings.demoMode}</Text>
             <Text style={styles.demoDescription}>{t.demoDesc}</Text>
           </View>
           <View style={styles.preferenceItem}>

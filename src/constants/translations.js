@@ -1,5 +1,17 @@
 export const translations = {
   en: {
+    // Settings Nested Dictionary
+    settings: {
+      title: 'Settings',
+      account: 'Account Settings',
+      notifications: 'Notification Settings',
+      language: 'Language',
+      demoMode: 'Demo Mode',
+      help: 'Help & Support',
+      about: 'About',
+      logout: 'Logout'
+    },
+
     // Shared / Tabs
     myFarms: 'My Farms',
     alerts: 'Alerts',
@@ -188,6 +200,18 @@ export const translations = {
     lonError: 'Longitude must be a valid number between -180 and 180.',
   },
   hi: {
+    // Settings Nested Dictionary
+    settings: {
+      title: 'सेटिंग्स',
+      account: 'खाता सेटिंग्स',
+      notifications: 'सूचना सेटिंग्स',
+      language: 'भाषा',
+      demoMode: 'डेमो मोड',
+      help: 'सहायता और समर्थन',
+      about: 'के बारे में',
+      logout: 'लॉगआउट'
+    },
+
     // Shared / Tabs
     myFarms: 'मेरे खेत',
     alerts: 'चेतावनी',
