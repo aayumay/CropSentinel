@@ -209,26 +209,21 @@ export const LocationPickerScreen = ({ navigation, route }) => {
         <MapView
           ref={mapRef}
           style={styles.map}
-          initialRegion={region}
+          initialRegion={{
+            latitude: 22.3072,
+            longitude: 73.1812,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
           onPress={handleMapPress}
           zoomEnabled={true}
           pitchEnabled={true}
           rotateEnabled={true}
           scrollEnabled={true}
-          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+          mapType="standard"
         >
-          <UrlTile
-            urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-            maximumZ={19}
-            tileSize={256}
-            shouldReplaceMapContent={Platform.OS === 'ios'}
-          />
           {selectedCoordinate && (
-            <Marker 
-              coordinate={selectedCoordinate}
-              title="Selected Farm Location"
-              pinColor={materialTheme.colors.primary}
-            />
+            <Marker coordinate={selectedCoordinate} />
           )}
         </MapView>
 
