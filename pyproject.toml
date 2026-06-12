@@ -12,4 +12,5 @@ dependencies = [
     "uvicorn>=0.49.0",
     "groq>=0.9.0",
     "langgraph>=1.2.4",
+    "pyjwt>=2.13.0",
 ]

@@ -3,36 +3,27 @@ Service layer for fetching and processing weather forecast data from Open-Meteo.
 """
 import requests
 
-def get_weather(city: str) -> dict:
+def get_weather(latitude: float, longitude: float) -> dict:
     """
-    Resolves city coordinates and fetches current & 7-day forecast agricultural weather data.
+    Fetches current & 7-day forecast agricultural weather data directly by coordinates
+    and reverse geocodes the coordinate to get a display location name.
     """
-    # 1. Resolve city name to lat/lon via Geocoding API
+    # 1. Reverse geocode coordinates to display location name via BigDataCloud client API
     try:
-        geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=en&format=json"
-        geo_response = requests.get(geocoding_url, timeout=10)
+        reverse_geocode_url = f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={latitude}&longitude={longitude}&localityLanguage=en"
+        geo_response = requests.get(reverse_geocode_url, timeout=10)
         geo_response.raise_for_status()
         geo_data = geo_response.json()
-        
-        if not geo_data.get("results"):
-            raise ValueError(f"City '{city}' could not be resolved.")
-            
-        location = geo_data["results"][0]
-        lat = location["latitude"]
-        lon = location["longitude"]
-        resolved_city_name = location.get("name", city)
+        resolved_location_name = geo_data.get("city") or geo_data.get("locality") or geo_data.get("principalSubdivision") or "Unknown Location"
     except Exception as e:
-        geocoding_url = locals().get("geocoding_url", "N/A")
-        print(f"[Warning] Open-Meteo Geocoding API failed (URL: {geocoding_url}, Error: {str(e)}). Using fallback coordinates.")
-        lat = 20.9374
-        lon = 77.7796
-        resolved_city_name = city
-    
-    # 2. Query the weather forecast API for agricultural metrics
+        print(f"[Warning] Reverse geocoding failed (Error: {str(e)}). Using fallback location name.")
+        resolved_location_name = "Unknown Location"
+
+    # 2. Query the weather forecast API for agricultural metrics directly using coordinates
     try:
         forecast_url = (
             f"https://api.open-meteo.com/v1/forecast"
-            f"?latitude={lat}&longitude={lon}"
+            f"?latitude={latitude}&longitude={longitude}"
             f"&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
             f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
             f"&timezone=auto"
@@ -56,7 +47,9 @@ def get_weather(city: str) -> dict:
                 "rain_probability": 15
             })
         return {
-            "city": resolved_city_name,
+            "location": resolved_location_name,
+            "latitude": latitude,
+            "longitude": longitude,
             "current": {
                 "temperature": 34,
                 "humidity": 55,
@@ -92,7 +85,9 @@ def get_weather(city: str) -> dict:
         })
         
     return {
-        "city": resolved_city_name,
+        "location": resolved_location_name,
+        "latitude": latitude,
+        "longitude": longitude,
         "current": {
             "temperature": int(round(current_data.get("temperature_2m"))) if current_data.get("temperature_2m") is not None else None,
             "humidity": int(round(current_data.get("relative_humidity_2m"))) if current_data.get("relative_humidity_2m") is not None else None,

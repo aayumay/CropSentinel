@@ -16,7 +16,6 @@ class AgentState(TypedDict):
     """
     latitude: float
     longitude: float
-    city: str
     satellite: dict
     weather: dict
     risk: dict
@@ -55,7 +54,7 @@ class CoordinatorAgent:
     Top-level coordinator agent that compiles and runs the multi-agent graph.
     """
     
-    def execute(self, latitude: float, longitude: float, city: str) -> dict:
+    def execute(self, latitude: float, longitude: float) -> dict:
         """
         Creates the initial state, invokes the compiled LangGraph workflow,
         and returns the final orchestrated state dictionary.
@@ -65,7 +64,6 @@ class CoordinatorAgent:
         initial_state = {
             "latitude": latitude,
             "longitude": longitude,
-            "city": city,
             "satellite": {},
             "weather": {},
             "risk": {},

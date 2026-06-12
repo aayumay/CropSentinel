@@ -5,7 +5,7 @@ from app.services.copernicus_service import get_ndvi
 from app.services.weather_service import get_weather
 from app.services.llm_service import generate_advice
 
-def calculate_risk(latitude: float, longitude: float, city: str, ndvi_data: dict = None, weather_data: dict = None) -> dict:
+def calculate_risk(latitude: float, longitude: float, ndvi_data: dict = None, weather_data: dict = None) -> dict:
     """
     Combines Sentinel-2 NDVI data and Weather Forecast data into a farm risk assessment.
     """
@@ -16,7 +16,7 @@ def calculate_risk(latitude: float, longitude: float, city: str, ndvi_data: dict
 
     # 2. Retrieve weather metrics
     if weather_data is None:
-        weather_data = get_weather(city)
+        weather_data = get_weather(latitude, longitude)
     current_weather = weather_data.get("current", {})
     temperature = current_weather.get("temperature")
     humidity = current_weather.get("humidity")

@@ -10,12 +10,12 @@ class WeatherAgent:
     Can be run as a standalone execution or as a LangGraph node.
     """
     
-    def execute(self, city: str) -> dict:
+    def execute(self, latitude: float, longitude: float) -> dict:
         """
         Executes weather forecast retrieval and returns normalized agent state.
         """
         try:
-            weather_data = get_weather(city)
+            weather_data = get_weather(latitude, longitude)
             return {
                 "agent": "weather",
                 "status": "completed",
@@ -30,14 +30,15 @@ class WeatherAgent:
 
     def run(self, state: dict) -> dict:
         """
-        LangGraph node execution. Reads city from state, performs weather retrieval,
+        LangGraph node execution. Reads coordinates from state, performs weather retrieval,
         appends results to state, and returns updated state.
         """
-        city = state.get("city")
-        if not city:
-            raise ValueError("State must contain 'city'.")
+        latitude = state.get("latitude")
+        longitude = state.get("longitude")
+        if not latitude or not longitude:
+            raise ValueError("State must contain 'latitude' and 'longitude'.")
             
-        result = self.execute(city)
+        result = self.execute(latitude, longitude)
         
         if result["status"] == "completed":
             state["weather"] = result["data"]

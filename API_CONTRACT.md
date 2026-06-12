@@ -347,7 +347,8 @@ Exposes forecast and current condition data for any resolved city.
 
 ```json
 {
-  "city": "Vadodara"
+  "latitude": 20.9374,
+  "longitude": 77.7796
 }
 ```
 
@@ -355,7 +356,9 @@ Exposes forecast and current condition data for any resolved city.
 
 ```json
 {
-  "city": "Vadodara",
+  "location": "Amravati",
+  "latitude": 20.9374,
+  "longitude": 77.7796,
   "current": {
     "temperature": 34,
     "humidity": 58,
@@ -392,8 +395,7 @@ Combines live Sentinel-2 NDVI and weather forecast data to generate a rule-based
 ```json
 {
   "latitude": 20.9374,
-  "longitude": 77.7796,
-  "city": "Vadodara"
+  "longitude": 77.7796
 }
 ```
 
@@ -434,8 +436,7 @@ Orchestrates the entire CropSentinel pipeline and returns all information requir
 ```json
 {
   "latitude": 20.9374,
-  "longitude": 77.7796,
-  "city": "Vadodara"
+  "longitude": 77.7796
 }
 ```
 
@@ -450,7 +451,9 @@ Orchestrates the entire CropSentinel pipeline and returns all information requir
     "captured_at": "2026-06-09T05:33:03.561Z"
   },
   "weather": {
-    "city": "Vadodara",
+    "location": "Amravati",
+    "latitude": 20.9374,
+    "longitude": 77.7796,
     "current": {
       "temperature": 32,
       "humidity": 65,
@@ -522,15 +525,124 @@ Intervention Agent
 
 ---
 
+# Authentication & User Management
+
+## POST /auth/login
+
+Used by farmers to authenticate passwordlessly using their mobile number. If the user does not exist, they are automatically registered.
+
+### Request
+
+```json
+{
+  "phone_number": "9876543210"
+}
+```
+
+### Response
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": 1,
+    "phone_number": "9876543210"
+  }
+}
+```
+
+---
+
+# Farm Management
+
+## POST /farm/create
+
+Authenticated route to create a farm owned by the logged-in user.
+
+**Headers**:
+* `Authorization: Bearer <token>`
+
+### Request
+
+```json
+{
+  "farm_name": "My Cotton Field",
+  "latitude": 20.9374,
+  "longitude": 77.7796
+}
+```
+
+### Response
+
+```json
+{
+  "farm_id": 1,
+  "farm_name": "My Cotton Field"
+}
+```
+
+---
+
+## GET /farm/list
+
+Authenticated route to list all farms owned by the logged-in user.
+
+**Headers**:
+* `Authorization: Bearer <token>`
+
+### Response
+
+```json
+[
+  {
+    "id": 1,
+    "farm_name": "My Cotton Field",
+    "latitude": 20.9374,
+    "longitude": 77.7796,
+    "created_at": "2026-06-12T12:00:00Z"
+  }
+]
+```
+
+---
+
+# Crop Analysis History
+
+## GET /history/{farm_id}
+
+Authenticated route to fetch the historical analysis runs for a specific farm. Verifies that the farm belongs to the current authenticated user.
+
+**Headers**:
+* `Authorization: Bearer <token>`
+
+### Response
+
+```json
+{
+  "farm_id": 1,
+  "history": [
+    {
+      "created_at": "2026-06-12T12:05:00Z",
+      "ndvi": 0.105,
+      "risk_score": 90,
+      "risk_level": "HIGH",
+      "recommendation": "Irrigate within 48 hours"
+    }
+  ]
+}
+```
+
+---
+
 # Future Endpoints
 
 These endpoints are expected but not yet defined:
 
-* Farm onboarding
 * Farm boundary upload
 * WhatsApp alert management
-* Historical recommendations
 * Multi-farm support
+
 
 ---
 

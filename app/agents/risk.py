@@ -10,12 +10,12 @@ class RiskAgent:
     Can be run as a standalone execution or as a LangGraph node.
     """
     
-    def execute(self, latitude: float, longitude: float, city: str) -> dict:
+    def execute(self, latitude: float, longitude: float) -> dict:
         """
         Executes risk assessment and returns normalized agent state.
         """
         try:
-            risk_data = calculate_risk(latitude, longitude, city)
+            risk_data = calculate_risk(latitude, longitude)
             return {
                 "agent": "risk",
                 "status": "completed",
@@ -40,10 +40,9 @@ class RiskAgent:
         """
         latitude = state.get("latitude")
         longitude = state.get("longitude")
-        city = state.get("city")
         
-        if not latitude or not longitude or not city:
-            raise ValueError("State must contain 'latitude', 'longitude', and 'city'.")
+        if not latitude or not longitude:
+            raise ValueError("State must contain 'latitude' and 'longitude'.")
             
         satellite_data = state.get("satellite")
         weather_data = state.get("weather")
@@ -53,7 +52,6 @@ class RiskAgent:
             risk_data = calculate_risk(
                 latitude=latitude,
                 longitude=longitude,
-                city=city,
                 ndvi_data=satellite_data,
                 weather_data=weather_data
             )
