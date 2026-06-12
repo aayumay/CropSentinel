@@ -217,12 +217,12 @@ export const LocationPickerScreen = ({ navigation, route }) => {
           scrollEnabled={true}
           mapType="standard" // standard map type enables tile engines on all platforms
         >
-          <UrlTile
+          {/* <UrlTile
             urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             maximumZ={19}
             tileSize={256}
             shouldReplaceMapContent={true}
-          />
+          /> */}
           {selectedCoordinate && (
             <Marker 
               coordinate={selectedCoordinate}
