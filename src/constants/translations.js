@@ -15,7 +15,6 @@ export const translations = {
     // Shared / Tabs
     myFarms: 'My Farms',
     alerts: 'Alerts',
-    settings: 'Settings',
     profile: 'Profile',
     home: 'Home',
     farms: 'Farms',
@@ -215,7 +214,6 @@ export const translations = {
     // Shared / Tabs
     myFarms: 'मेरे खेत',
     alerts: 'चेतावनी',
-    settings: 'सेटिंग्स',
     profile: 'प्रोफाइल',
     home: 'होम',
     farms: 'खेत',

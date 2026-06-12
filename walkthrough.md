@@ -125,3 +125,16 @@ To resolve the duplicate content between the "Home" and "Farms" tabs, a complete
 * **Premium Material 3 Dialogs**: Popups in `AddFieldScreen` (save farm success) and `InterventionDetailScreen` (recorded recommendations success dialog with cost/risk ROI metrics) styled to Material 3 standard (rounded 28dp corners, clean entry scale/fade timing animations).
 * **Haptic Feedback**: Subtle physical responses added to selectors, settings toggle switches, buttons, and simulation actions, safely wrapped in `try/catch` to ensure complete compatibility on devices/emulators that do not support haptics.
 * **Build Integrity**: Checked using `npx expo-doctor` (21/21 passed) and validated using `npx expo export` (both iOS and Android bundles successfully compiled and generated under `dist/` without any warnings).
+
+## D5 Bug Fix Pass — Settings Localization & Unique Keys
+
+Two regressions were successfully resolved on the Settings tab:
+
+1. **Unique Key Prop Warning**:
+   - **Root Cause**: The settings menu items rendering loop mapped items using `key={item.label}`. If translations were missing, `label` resolved to `undefined` or duplicate keys, causing React rendering warnings and leading to missing items.
+   - **Solution**: Replaced key attribute with a stable, semantic key identifier (`item.id`) matching `account`, `notifications`, `help`, and `about`.
+2. **Missing Settings Labels & Fallbacks**:
+   - **Root Cause**: Translation tables lacked a nested settings dictionary. Localized labels (e.g. `accountSettings`) were missing entirely from `translations.js`.
+   - **Solution**: Added the nested `settings: { ... }` object to both Hindi and English catalogs in [translations.js](file:///c:/Users/Yesh%20bind/OneDrive/Desktop/Faraway/src/constants/translations.js). Used safe fallback properties inside [SettingsScreen.js](file:///c:/Users/Yesh%20bind/OneDrive/Desktop/Faraway/src/screens/SettingsScreen.js) (e.g. `translations[language]?.settings?.account ?? translations.en.settings.account`) to guarantee label availability.
+3. **Verification**:
+   - Bundling (`npx expo export`) and diagnostics (`npx expo-doctor`) verified successfully, ensuring 100% Expo Go compatibility.
