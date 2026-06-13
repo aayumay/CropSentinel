@@ -40,6 +40,28 @@ def get_db():
     finally:
         db.close()
 
+def migrate_farm_columns() -> None:
+    """
+    Adds optional farm metadata columns to existing PostgreSQL databases.
+    Safe to run on every startup (IF NOT EXISTS).
+    """
+    if engine is None:
+        return
+    statements = [
+        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS crop_type VARCHAR(100)",
+        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS sowing_date VARCHAR(20)",
+        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS area DOUBLE PRECISION",
+        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS soil_type VARCHAR(100)",
+    ]
+    try:
+        with engine.connect() as connection:
+            for stmt in statements:
+                connection.execute(text(stmt))
+            connection.commit()
+    except Exception as e:
+        print(f"Farm schema migration skipped or failed: {e}", flush=True)
+
+
 def verify_connection() -> bool:
     """
     Runs a simple query to verify database connectivity.

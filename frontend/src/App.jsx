@@ -95,7 +95,7 @@ function AppNavigation() {
     { key: 'farms',    Icon: Sprout,     label: t('farms')    },
     { key: 'insights', Icon: TrendingUp, label: t('insights') },
     { key: 'alerts',   Icon: Bell,       label: t('alerts'),  badge: true },
-    { key: 'profile',  Icon: User,       label: t('profile')  },
+    { key: 'profile 1',  Icon: User,       label: t('profile')  },
   ];
 
   const renderScreen = () => {

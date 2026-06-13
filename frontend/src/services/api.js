@@ -1,8 +1,9 @@
-let base = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://cropsentinel-wrls.onrender.com' : '/api');
-if (import.meta.env.PROD && base.endsWith('/api')) {
+const DEFAULT_API_URL = 'https://cropsentinel-wrls.onrender.com';
+let base = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+if (base.endsWith('/api')) {
   base = base.replace(/\/api$/, '');
 }
-const API_BASE_URL = base;
+const API_BASE_URL = base.replace(/\/$/, '');
 
 export class BackendUnavailableError extends Error {
   constructor(message) {
@@ -213,6 +214,7 @@ export async function createFarm(farmData) {
         area: farmData.area ? parseFloat(farmData.area) : null,
         crop_type: farmData.crop_type || null,
         sowing_date: farmData.sowing_date || null,
+        soil_type: farmData.soil_type || null,
         latitude: parseFloat(farmData.latitude) || 0,
         longitude: parseFloat(farmData.longitude) || 0
       })
