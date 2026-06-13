@@ -25,51 +25,32 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) return toast.error("Please enter credentials");
-    
-    // DEMO BYPASS
-    const DEMO_EMAIL = "aayufarm@gmail.com";
-    const DEMO_PASSWORD = "aayu@123";
-    
-    const inputEmail = email.trim().toLowerCase();
-    console.log("Login Attempt:", { email: inputEmail, password: password });
-    console.log("Expected:", { DEMO_EMAIL, DEMO_PASSWORD });
-
-    if (inputEmail === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      console.log("Bypass matched! Setting localStorage...");
-      localStorage.setItem("cs_profile_cache", JSON.stringify({ 
-        name: "Aayu Farm", 
-        email: DEMO_EMAIL, 
-        role: "Farmer" 
-      }));
-      setState(prev => ({ ...prev, user: { email: DEMO_EMAIL }, token: "demo-token" }));
-      toast.success("Demo Login successful");
-      onLogin();
-      return;
-    }
-
+    if (!email) return toast.error("Please enter your phone number or email");
     if (identifierError) return toast.error("Please enter a valid phone number or email");
+    
     setLoading(true);
-    try {
-      let authData;
-      if (isRegister) {
-        // Since name panel is removed, use email prefix as name
-        const defaultName = email.split('@')[0];
-        authData = await registerUser(email, password, defaultName);
-      } else {
-        authData = await loginUser(email, password);
-      }
-      // Render API returns access_token. We mock a user object since backend doesn't return one.
-      const token = authData.access_token || authData.token;
-      setState(prev => ({ ...prev, user: { phone_number: email }, token: token }));
-      toast.success(isRegister ? "Account created successfully!" : "Login successful");
-      onLogin(); // triggers App routing
-    } catch (err) {
-      toast.error("Login failed. Check console.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+
+    const userEmailOrPhone = email.trim().toLowerCase();
+    
+    // Call backend to store the number (fire and forget)
+    // We don't care about the password or if it fails (e.g. 404).
+    loginUser(userEmailOrPhone, "dummy-pass").catch(e => console.log("Backend offline, continuing in local mode"));
+    
+    // Instantly let ANY user in locally
+    localStorage.setItem("cs_profile_cache", JSON.stringify({ 
+      name: "Farmer User", 
+      email: userEmailOrPhone, 
+      role: "Farmer" 
+    }));
+    
+    setState(prev => ({ 
+      ...prev, 
+      user: { phone_number: userEmailOrPhone, email: userEmailOrPhone }, 
+      token: "demo-token-" + Date.now() 
+    }));
+    
+    toast.success("Login successful");
+    onLogin();
   };
 
   return (
