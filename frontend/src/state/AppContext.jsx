@@ -55,15 +55,17 @@ export const AppProvider = ({ children }) => {
       loadProfile();
 
       try {
-        const payload = JSON.parse(atob(state.token.split('.')[1]));
-        if (payload && payload.phone_number) {
-          setState(prev => ({ 
-            ...prev, 
-            profileData: { ...prev.profileData, phone: payload.phone_number } 
-          }));
+        if (state.token && state.token.includes('.')) {
+          const payload = JSON.parse(atob(state.token.split('.')[1]));
+          if (payload && payload.phone_number) {
+            setState(prev => ({ 
+              ...prev, 
+              profileData: { ...prev.profileData, phone: payload.phone_number } 
+            }));
+          }
         }
       } catch (e) {
-        console.error("Failed to parse JWT", e);
+        console.warn("Failed to parse JWT", e);
       }
     }
   }, [state.token]);
