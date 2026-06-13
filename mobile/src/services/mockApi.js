@@ -21,10 +21,9 @@ export let mockFarms = [
     zone_type: 'healthy',
     status: 'Crop health excellent — optimal moisture and NDVI. No intervention required.',
     recommendation: {
-      action: 'Continue current irrigation schedule',
-      estimated_cost: 0,
-      yield_loss_risk: 0,
-      confidence: 95,
+      action: 'Inspect crops and apply targeted treatment.',
+      reason: 'Pest indicators exceed safe thresholds.',
+      confidence: 88,
     },
     latitude: 30.9010,
     longitude: 75.8573,
@@ -41,10 +40,9 @@ export let mockFarms = [
     zone_type: 'moderate',
     status: 'Moderate water stress detected — increase irrigation frequency.',
     recommendation: {
-      action: 'Increase irrigation by 20% over next 5 days',
-      estimated_cost: 520,
-      yield_loss_risk: 9500,
-      confidence: 85,
+      action: 'Improve drainage and delay irrigation.',
+      reason: 'Excessive moisture may damage root systems.',
+      confidence: 90,
     },
     latitude: 10.9102,
     longitude: 79.3629,
@@ -61,10 +59,9 @@ export let mockFarms = [
     zone_type: 'drought',
     status: 'Critical drought stress detected.',
     recommendation: {
-      action: 'Increase irrigation within 48 hours.',
-      estimated_cost: 1200,
-      yield_loss_risk: 45000,
-      confidence: 91,
+      action: 'Irrigate within 24 hours.',
+      reason: 'Low moisture and declining NDVI detected.',
+      confidence: 95,
     },
     latitude: 19.8762,
     longitude: 75.3433,
@@ -95,9 +92,6 @@ export const fetchDashboard = async () => {
       status: 'Crop health stable — optimal moisture levels.',
       recommendation: {
         action: 'Continue standard irrigation',
-        estimated_cost: 0,
-        yield_loss_risk: 0,
-        confidence: 95,
       },
     };
   }
@@ -180,28 +174,33 @@ export const getDashboard = fetchDashboard;
 export const getAlerts = fetchAlerts;
 export const getAgentStatus = fetchAgentStatus;
 
-export const getIntervention = async () => {
+export const getIntervention = async (farmId) => {
   await delay(500);
   const ds = demoState.get();
 
-  if (ds.isDemoMode && !ds.isDroughtSimulated) {
+  const idStr = String(farmId);
+
+  if (idStr === '1') {
     return {
-      farm_id: 'farm_003',
-      action: 'Continue standard irrigation',
-      irrigation_mm: 0,
-      cost_inr: 0,
-      risk_inr: 0,
-      confidence: 0.95,
+      farm_id: '1',
+      action: 'Inspect crops and apply targeted treatment.',
+      reason: 'Pest indicators exceed safe thresholds.',
+      confidence: 0.88,
+    };
+  } else if (idStr === '2') {
+    return {
+      farm_id: '2',
+      action: 'Improve drainage and delay irrigation.',
+      reason: 'Excessive moisture may damage root systems.',
+      confidence: 0.90,
     };
   }
 
   return {
-    farm_id: 'farm_003',
-    action: 'Increase irrigation within 48 hours.',
-    irrigation_mm: 35,
-    cost_inr: 1200,
-    risk_inr: 45000,
-    confidence: 0.91,
+    farm_id: '3',
+    action: 'Irrigate within 24 hours.',
+    reason: 'Low moisture and declining NDVI detected.',
+    confidence: 0.95,
   };
 };
 
@@ -300,9 +299,6 @@ export const createFarm = async (farmData) => {
     status: 'Crop health stable.',
     recommendation: {
       action: 'Continue standard monitoring',
-      estimated_cost: 0,
-      yield_loss_risk: 0,
-      confidence: 95,
     },
     latitude: farmData.latitude,
     longitude: farmData.longitude,

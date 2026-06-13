@@ -28,7 +28,9 @@ export const registerForPushNotificationsAsync = async () => {
         lightColor: '#4A7C2F',
       });
     } catch (error) {
-      console.warn('Failed to set notification channel:', error);
+      if (__DEV__) {
+        console.warn('Failed to set notification channel:', error);
+      }
     }
   }
 
@@ -41,7 +43,9 @@ export const registerForPushNotificationsAsync = async () => {
   }
 
   if (finalStatus !== 'granted') {
-    console.warn('Notification permissions not granted!');
+    if (__DEV__) {
+      console.warn('Notification permissions not granted!');
+    }
     return { success: false, status: finalStatus };
   }
 
@@ -61,7 +65,9 @@ export const scheduleLocalAlert = async (title, body, data = {}) => {
     });
     return true;
   } catch (error) {
-    console.warn('Failed to schedule local notification:', error);
+    if (__DEV__) {
+      console.warn('Failed to schedule local notification:', error);
+    }
     return false;
   }
 };
@@ -71,7 +77,9 @@ export const cancelAllNotifications = async () => {
     await cancelAllScheduledNotificationsAsync();
     return true;
   } catch (error) {
-    console.warn('Failed to cancel notifications:', error);
+    if (__DEV__) {
+      console.warn('Failed to cancel notifications:', error);
+    }
     return false;
   }
 };

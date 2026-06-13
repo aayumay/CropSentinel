@@ -19,14 +19,42 @@ import { NotificationSettingsScreen } from './src/screens/NotificationSettingsSc
 import { HelpSupportScreen } from './src/screens/HelpSupportScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 
+import { navigationRef } from './src/config/navigation';
+import { AppErrorBoundary } from './src/components/AppErrorBoundary';
+import { fetchFarms } from './src/services';
+import { demoState } from './src/config/demoState';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  React.useEffect(() => {
+    const bootstrapAuth = async () => {
+      const token = demoState.get().authToken;
+      if (token) {
+        try {
+          await fetchFarms();
+        } catch (e) {
+          if (e.message === 'SESSION_EXPIRED' || e.status === 401) {
+            demoState.set({ authToken: null });
+            if (navigationRef.isReady()) {
+              navigationRef.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }
+          }
+        }
+      }
+    };
+    bootstrapAuth();
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <>
+      <AppErrorBoundary>
         <StatusBar style="dark" backgroundColor={materialTheme.colors.background} />
         <NavigationContainer
+          ref={navigationRef}
           theme={{
             dark: false,
             colors: {
@@ -62,7 +90,7 @@ export default function App() {
             <Stack.Screen name="About" component={AboutScreen} />
           </Stack.Navigator>
         </NavigationContainer>
-      </>
+      </AppErrorBoundary>
     </SafeAreaProvider>
   );
 }

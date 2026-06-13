@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Polyline, Circle, Line as SvgLine, Text as SvgText } from 'react-native-svg';
@@ -9,6 +9,7 @@ import { materialTheme } from '../theme';
 import { crops } from '../assets';
 import { getNdviHistory, getMarketHistory, getFarmHistory, postAnalyze, fetchFarms } from '../services';
 import { LoadingState } from '../components/LoadingState';
+import { SessionExpiredDialog } from '../components/SessionExpiredDialog';
 import { useDemoState } from '../config/demoState';
 import { DemoBanner } from '../components/DemoBanner';
 import { scheduleLocalAlert } from '../services/notifications';
@@ -79,7 +80,7 @@ const SvgSparkline = ({ data, labels, color, fallbackText, formatValue }) => {
   const chartW = W - PAD_LEFT - PAD_RIGHT;
   const chartH = H - PAD_TOP - PAD_BOTTOM;
 
-  if (!data || data.length === 0) {
+  if (!data || data.length <= 1) {
     return (
       <View style={{ height: H, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: materialTheme.colors.textSecondary, fontSize: 13 }}>{fallbackText}</Text>
@@ -162,16 +163,22 @@ export const FarmDetailScreen = ({ navigation, route }) => {
   const [ndviData, setNdviData] = useState([]);
   const [marketData, setMarketData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [satelliteAnalysis, setSatelliteAnalysis] = useState(null);
+  const [sessionExpiredVisible, setSessionExpiredVisible] = useState(false);
 
   const farmId = route.params?.farmId;
   const [farmInfo, setFarmInfo] = useState(null);
 
 
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isRefreshing = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
       let dash = null;
@@ -236,9 +243,6 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           status: statusVal,
           recommendation: {
             action: statusVal,
-            estimated_cost: selectedDemo.id === 3 && isDroughtSimulated ? 1200 : 0,
-            yield_loss_risk: selectedDemo.id === 3 && isDroughtSimulated ? 45000 : 0,
-            confidence: selectedDemo.id === 3 && isDroughtSimulated ? 91 : 95
           }
         };
 
@@ -283,11 +287,7 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         });
 
 
-        const [analyzeRes, histRes, mktRes] = await Promise.all([
-          postAnalyze({ latitude: lat, longitude: lon, farm_id: farmIdNum }),
-          getFarmHistory(farmIdNum),
-          getMarketHistory()
-        ]);
+        const analyzeRes = await postAnalyze({ latitude: lat, longitude: lon, farm_id: farmIdNum });
 
         if (analyzeRes) {
           dash = {
@@ -307,9 +307,6 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             status: analyzeRes.risk?.recommendation || 'Crop health stable.',
             recommendation: {
               action: analyzeRes.risk?.recommendation || 'No action required.',
-              estimated_cost: 450,
-              yield_loss_risk: 12000,
-              confidence: 88
             }
           };
 
@@ -328,6 +325,11 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             recommendation: analyzeRes.risk?.recommendation || 'Vegetation status is stable. Continue regular monitoring.'
           });
         }
+
+        const [histRes, mktRes] = await Promise.all([
+          getFarmHistory(farmIdNum),
+          getMarketHistory()
+        ]);
 
         if (histRes && histRes.history) {
           const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -352,10 +354,21 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         setMarketData(marketRes);
       }
     } catch (err) {
-      console.warn('Failed to load dashboard or history in FarmDetailScreen:', err);
-      setError('Could not retrieve latest farm metrics.');
+      if (err.message === 'SESSION_EXPIRED') {
+        setSessionExpiredVisible(true);
+        return;
+      }
+      if (__DEV__) {
+        console.warn('Failed to load dashboard or history in FarmDetailScreen:', err);
+      }
+      if (err.status === 404 || err.message?.includes('404') || err.message?.toLowerCase().includes('not found')) {
+        setError('404_NOT_FOUND');
+      } else {
+        setError(err.message || 'Could not retrieve latest farm metrics.');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -401,6 +414,55 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           <Text style={styles.headerTitle}>Loading...</Text>
         </View>
         <LoadingState message="Fetching farm details..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !loading) {
+    const is404 = error === '404_NOT_FOUND';
+    const displayMessage = is404 
+      ? "Farm data is still being prepared. Pull to refresh shortly."
+      : error;
+
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => { triggerHapticSelection(); navigation.goBack(); }} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{farmInfo?.name || 'Farm Details'}</Text>
+        </View>
+        <ScrollView 
+          contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadData(true)}
+              colors={[materialTheme.colors.primary]}
+            />
+          }
+        >
+          <Feather name="clock" size={48} color={materialTheme.colors.primary} style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 16, fontWeight: '600', color: materialTheme.colors.onSurface, textAlign: 'center', paddingHorizontal: 24, marginBottom: 24, lineHeight: 22 }}>
+            {displayMessage}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.primaryBtn, { paddingHorizontal: 32 }]} 
+            onPress={() => loadData()}
+          >
+            <Text style={styles.primaryBtnText}>Refresh</Text>
+          </TouchableOpacity>
+        </ScrollView>
+        <SessionExpiredDialog
+          visible={sessionExpiredVisible}
+          onConfirm={() => {
+            setSessionExpiredVisible(false);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }}
+        />
       </SafeAreaView>
     );
   }
@@ -472,13 +534,17 @@ export const FarmDetailScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {error && (
-          <View style={styles.errorBanner}>
-            <Feather name="alert-circle" size={14} color={materialTheme.colors.error} style={{ marginRight: 6 }} />
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
-        )}
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadData(true)}
+            colors={[materialTheme.colors.primary]}
+          />
+        }
+      >
 
         <View style={styles.cropHeroCard}>
           <View style={styles.cropHeroInfo}>
@@ -642,6 +708,16 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           <Text style={styles.bottomNavText}>{t.profile}</Text>
         </TouchableOpacity>
       </View>
+      <SessionExpiredDialog
+        visible={sessionExpiredVisible}
+        onConfirm={() => {
+          setSessionExpiredVisible(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
     </SafeAreaView>
   );
 };

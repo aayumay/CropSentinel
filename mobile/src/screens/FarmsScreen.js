@@ -9,6 +9,8 @@ import { materialTheme } from '../theme';
 import { crops } from '../assets';
 import { fetchFarms, deleteFarm, getFarmHistory } from '../services';
 import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
+import { SessionExpiredDialog } from '../components/SessionExpiredDialog';
 import { useDemoState } from '../config/demoState';
 import { DemoBanner } from '../components/DemoBanner';
 import { translations } from '../constants/translations';
@@ -84,10 +86,12 @@ export const FarmsScreen = ({ navigation }) => {
   const { isDemoMode, isDroughtSimulated, language } = useDemoState();
   const t = translations[language] || translations.en;
 
-  const [farms, setFarms] = useState([]);
+  const [allFarms, setAllFarms] = useState([]);
+  const [displayedFarms, setDisplayedFarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionExpiredVisible, setSessionExpiredVisible] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -155,7 +159,8 @@ export const FarmsScreen = ({ navigation }) => {
             soilType: 'Silty',
           }
         ];
-        setFarms(demoFarmsList);
+        setAllFarms(demoFarmsList);
+        setDisplayedFarms(demoFarmsList);
       } else {
         const rawFarms = await fetchFarms();
         if (rawFarms && Array.isArray(rawFarms)) {
@@ -181,7 +186,9 @@ export const FarmsScreen = ({ navigation }) => {
                 };
               }
             } catch (e) {
-              console.warn(`Failed to fetch history for farm ${f.id}:`, e);
+              if (__DEV__) {
+                console.warn(`Failed to fetch history for farm ${f.id}:`, e);
+              }
             }
             return {
               id: String(f.id),
@@ -199,13 +206,21 @@ export const FarmsScreen = ({ navigation }) => {
               soilType: 'Loamy',
             };
           }));
-          setFarms(mappedFarms);
+          setAllFarms(mappedFarms);
+          setDisplayedFarms(mappedFarms);
         } else {
-          setFarms([]);
+          setAllFarms([]);
+          setDisplayedFarms([]);
         }
       }
     } catch (err) {
-      console.warn('Failed to load farms data:', err);
+      if (err.message === 'SESSION_EXPIRED') {
+        setSessionExpiredVisible(true);
+        return;
+      }
+      if (__DEV__) {
+        console.warn('Failed to load farms data:', err);
+      }
       setError('Could not retrieve farms. Please check connection and try again.');
     } finally {
       setLoading(false);
@@ -226,13 +241,29 @@ export const FarmsScreen = ({ navigation }) => {
       t.cancel,
       [
         { text: t.viewDetails, onPress: () => { triggerHapticSelection(); navigation.navigate('FarmDetail', { farmId: Number(farm.id) }); } },
-        { text: t.editFarm, onPress: () => { triggerHapticSelection(); navigation.navigate('AddField', { farm }); } },
+        { 
+          text: `${t.editFarm} (Unavailable)`, 
+          onPress: () => { 
+            triggerHapticSelection(); 
+            Alert.alert(
+              language === 'hi' ? 'सुविधा अनुपलब्ध है' : 'Feature Unavailable',
+              language === 'hi' 
+                ? 'खेत विवरण अपडेट करना वर्तमान में बैकएंड सेवा द्वारा समर्थित नहीं है। केवल खेत निर्माण और देखना सक्रिय हैं।' 
+                : 'Updating farm details is currently not supported by the backend service. Only farm creation and viewing are active.'
+            ); 
+          } 
+        },
         {
-          text: t.deleteFarm,
+          text: `${t.deleteFarm} (Unavailable)`,
           style: "destructive",
           onPress: () => {
             triggerHapticWarning();
-            handleDeleteFarm(farm);
+            Alert.alert(
+              language === 'hi' ? 'सुविधा अनुपलब्ध है' : 'Feature Unavailable',
+              language === 'hi' 
+                ? 'खेतों को हटाना वर्तमान में बैकएंड सेवा द्वारा समर्थित नहीं है। केवल खेत निर्माण और देखना सक्रिय हैं।' 
+                : 'Deleting farms is currently not supported by the backend service. Only farm creation and viewing are active.'
+            );
           },
         },
         { text: t.cancel, style: "cancel" }
@@ -253,11 +284,14 @@ export const FarmsScreen = ({ navigation }) => {
             triggerHapticWarning();
             try {
               // Optimistic update
-              setFarms(prev => prev.filter(f => f.id !== farm.id));
+              setAllFarms(prev => prev.filter(f => f.id !== farm.id));
+              setDisplayedFarms(prev => prev.filter(f => f.id !== farm.id));
               await deleteFarm(farm.id);
               Alert.alert(t.success, "Farm removed from list.");
             } catch (err) {
-              console.warn("Delete farm failed:", err);
+              if (__DEV__) {
+                console.warn("Delete farm failed:", err);
+              }
               loadFarmsData();
               Alert.alert("Delete Failed", err.message || "An error occurred while deleting farm.");
             }
@@ -267,20 +301,26 @@ export const FarmsScreen = ({ navigation }) => {
     );
   };
 
-  const filteredFarms = farms.filter(farm => {
-    const matchesSearch = farm.name.toLowerCase().includes(searchQuery.toLowerCase());
-    let matchesStatus = true;
+  React.useEffect(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = allFarms.filter(farm => {
+      const matchesName = (farm.name || '').toLowerCase().includes(query);
+      const matchesCrop = (farm.cropType || '').toLowerCase().includes(query);
+      const matchesSearch = matchesName || matchesCrop;
 
-    if (activeFilter === 'Healthy') {
-      matchesStatus = farm.healthScore >= 75;
-    } else if (activeFilter === 'Warning') {
-      matchesStatus = farm.healthScore >= 50 && farm.healthScore < 75;
-    } else if (activeFilter === 'Critical') {
-      matchesStatus = farm.healthScore < 50;
-    }
+      let matchesStatus = true;
+      if (activeFilter === 'Healthy') {
+        matchesStatus = farm.healthScore >= 75;
+      } else if (activeFilter === 'Warning') {
+        matchesStatus = farm.healthScore >= 50 && farm.healthScore < 75;
+      } else if (activeFilter === 'Critical') {
+        matchesStatus = farm.healthScore < 50;
+      }
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+    setDisplayedFarms(filtered);
+  }, [searchQuery, activeFilter, allFarms]);
 
   const handleTabPress = (route) => {
     triggerHapticSelection();
@@ -311,8 +351,19 @@ export const FarmsScreen = ({ navigation }) => {
     );
   };
 
-  if (loading && !refreshing && farms.length === 0) {
+  if (loading && !refreshing && allFarms.length === 0) {
     return <LoadingState message="Fetching farms..." />;
+  }
+
+  if (error && allFarms.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t.myFarms}</Text>
+        </View>
+        <ErrorState message={error} onRetry={() => loadFarmsData(false)} />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -375,14 +426,19 @@ export const FarmsScreen = ({ navigation }) => {
           </View>
         )}
 
-        {filteredFarms.length === 0 ? (
+        {displayedFarms.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Feather name="info" size={40} color={materialTheme.colors.textSecondary} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyText}>{t.noFarmsFarms}</Text>
+            <Text style={styles.emptyText}>
+              {searchQuery.trim() !== '' 
+                ? 'No farms match your search.' 
+                : t.noFarmsFarms
+              }
+            </Text>
           </View>
         ) : (
           <View style={styles.farmsContainer}>
-            {filteredFarms.map((item, index) => {
+            {displayedFarms.map((item, index) => {
               const healthBadge = getHealthBadgeStyle(item.healthScore, t);
               return (
                 <FadeInCard key={item.id} delay={index * 100}>
@@ -480,6 +536,16 @@ export const FarmsScreen = ({ navigation }) => {
           <Text style={styles.bottomNavText}>{t.profile}</Text>
         </TouchableOpacity>
       </View>
+      <SessionExpiredDialog
+        visible={sessionExpiredVisible}
+        onConfirm={() => {
+          setSessionExpiredVisible(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
     </SafeAreaView>
   );
 };

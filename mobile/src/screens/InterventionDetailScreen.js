@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, ActivityIndicator, Share, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
 import { materialTheme } from '../theme';
-import { getIntervention, getFarmHistory, postAnalyze, submitIntervention, fetchFarms } from '../services';
-import { LoadingState } from '../components/LoadingState';
-import { ErrorState } from '../components/ErrorState';
-import { scheduleLocalAlert } from '../services/notifications';
+import { SessionExpiredDialog } from '../components/SessionExpiredDialog';
 import { useDemoState } from '../config/demoState';
 import { DemoBanner } from '../components/DemoBanner';
 import { translations } from '../constants/translations';
+import { getIntervention, submitIntervention } from '../services';
+import { LoadingState } from '../components/LoadingState';
 
 const triggerHapticSelection = async () => {
   try {
@@ -29,11 +28,9 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
   const { isDemoMode, isDroughtSimulated, applyIntervention, language } = useDemoState();
   const t = translations[language] || translations.en;
 
+  const [sessionExpiredVisible, setSessionExpiredVisible] = useState(false);
   const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-
+  const [loading, setLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -42,252 +39,44 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
   const dialogFadeAnim = useRef(new Animated.Value(0)).current;
   const dialogScaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  const handleMoreMenuPress = () => {
-    triggerHapticSelection();
-    Alert.alert(
-      "Insights Options",
-      "Choose an option:",
-      [
-        { text: "Refresh Insights", onPress: () => loadIntervention(true) },
-        { text: "Export Summary", onPress: handleExportSummary },
-        { text: "Share Report", onPress: handleShareReport },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
+  const resolvedFarmId = route.params?.farmId || (isDroughtSimulated ? '3' : '2');
+
+  const getFarmName = (farmId) => {
+    const idStr = String(farmId);
+    if (idStr === '1') return 'Punjab Wheat Farm';
+    if (idStr === '2') return 'Kaveri Delta Rice Farm';
+    return 'Marathwada Sugarcane Farm';
   };
 
-  const handleExportSummary = () => {
-    if (!details) return;
-    const summaryText = `CropSentinel Insights Report\nFarm: Marathwada Sugarcane Farm\nAction: ${details.action}\nCost: ${details.cost}\nYield Risk: ${details.risk}\nConfidence: ${Math.round(details.confidence * 100)}%`;
-    Alert.alert(
-      "Insights Export",
-      summaryText,
-      [{ text: "OK" }]
-    );
-  };
-
-  const handleShareReport = async () => {
-    if (!details) return;
-    const shareContent = {
-      message: `CropSentinel Insights Report\nFarm: Marathwada Sugarcane Farm\nAction: ${details.action}\nCost: ${details.cost}\nYield Risk: ${details.risk}\nConfidence: ${Math.round(details.confidence * 100)}%`,
-    };
-    try {
-      await Share.share(shareContent);
-    } catch (err) {
-      console.warn("Sharing failed:", err);
-    }
-  };
-
-  const triggerApply = async () => {
-    triggerHapticSelection();
-    if (!details) return;
-    
-    setIsApplying(true);
-    const farmId = route.params?.farmId || details?.farmId || 3;
-    
-    try {
-      await submitIntervention(farmId, {
-        action: details.action,
-        cost: details.cost,
-        risk: details.risk,
-      });
-
-      if (isDemoMode) {
-        applyIntervention(farmId);
-      }
-      
-      setIsApplying(false);
-      setShowSuccessDialog(true);
-      
-      // Local notification
-      await scheduleLocalAlert(
-        "CropSentinel Alert",
-        "Intervention applied successfully. Continue monitoring your farm."
-      );
-    } catch (err) {
-      console.warn("Failed to apply intervention:", err);
-      Alert.alert("Failed to Apply Intervention", err.message || "An error occurred.");
-      setIsApplying(false);
-    }
-  };
-
-  const loadIntervention = async (isRefreshing = false) => {
-    if (isRefreshing) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-    
-    try {
-      const farmIdFromRoute = route.params?.farmId;
-      let resolvedFarmId = farmIdFromRoute;
-
-      if (!isDemoMode && !resolvedFarmId) {
-        const list = await fetchFarms().catch(() => []);
-        if (list && list.length > 0) {
-          resolvedFarmId = list[0].id;
-        }
-      }
-
-      if (isDemoMode) {
-        // demo mode mock values
-        let action = 'Optimal moisture - continue normal irrigation.';
-        let description = 'Crop health is optimal. No drought stress detected.';
-        let irrigation = '0 mm';
-        let cost = 'Free';
-        let risk = 'None';
-        let confidence = 0.95;
-
-        // If sugarcane farm (id 3)
-        if (String(resolvedFarmId) === '3') {
-          if (isDroughtSimulated) {
-            action = 'Increase irrigation within 48 hours.';
-            description = 'Drought stress detected. High moisture depletion rate.';
-            irrigation = '35 mm';
-            cost = '₹1,200';
-            risk = '₹45,000';
-            confidence = 0.91;
-          } else {
-            action = 'Continue standard irrigation';
-            description = 'Crop health is optimal. No drought stress detected.';
-            irrigation = '0 mm';
-            cost = 'Free';
-            risk = 'None';
-            confidence = 0.95;
-          }
-        } else if (String(resolvedFarmId) === '2') {
-          action = 'Increase irrigation by 20% over next 5 days';
-          description = 'Moderate soil moisture deficit detected.';
-          irrigation = '20 mm';
-          cost = '₹520';
-          risk = '₹9,500';
-          confidence = 0.85;
-        } else if (String(resolvedFarmId) === '1') {
-          action = 'Continue current irrigation schedule';
-          description = 'Crop health is optimal. Soil moisture levels are standard.';
-          irrigation = '0 mm';
-          cost = 'Free';
-          risk = 'None';
-          confidence = 0.95;
-        }
-
-        setDetails({
-          farmId: resolvedFarmId || 3,
-          action,
-          description,
-          irrigation,
-          cost,
-          risk,
-          confidence,
-          improvement: '20–25%',
-          roi: '3.8x',
-        });
-      } else {
-        // Real mode:
-        const list = await fetchFarms();
-        if (!list || list.length === 0) {
-          throw new Error('No farms found. Add a field first to view insights.');
-        }
-        
-        let activeFarm = list.find(f => String(f.id) === String(resolvedFarmId));
-        if (!activeFarm) {
-          activeFarm = list[0];
-          resolvedFarmId = activeFarm.id;
-        }
-
-        // Try getting history first
-        let latest = null;
+  useEffect(() => {
+    if (isDemoMode) {
+      const loadDemoRecommendation = async () => {
+        setLoading(true);
         try {
-          const histRes = await getFarmHistory(resolvedFarmId);
-          if (histRes && histRes.history && histRes.history.length > 0) {
-            latest = histRes.history[0];
-          }
+          const res = await getIntervention(resolvedFarmId);
+          setDetails(res);
         } catch (e) {
-          console.warn('History fetch failed, trying analysis...', e);
+          console.warn("Failed to load demo intervention:", e);
+        } finally {
+          setLoading(false);
         }
-
-        // If no history found, run analyze to generate recommendations
-        if (!latest) {
-          try {
-            const analyzeRes = await postAnalyze({
-              latitude: Number(activeFarm.latitude),
-              longitude: Number(activeFarm.longitude),
-              farm_id: Number(resolvedFarmId),
-            });
-            if (analyzeRes && analyzeRes.risk) {
-              latest = {
-                recommendation: analyzeRes.risk.recommendation,
-                risk_level: analyzeRes.risk.risk_level,
-                risk_score: analyzeRes.risk.risk_score,
-              };
-            }
-          } catch (e) {
-            console.warn('Analysis fallback failed...', e);
-          }
-        }
-
-        if (latest) {
-          const riskLevel = (latest.risk_level || 'low').toLowerCase();
-          const isHigh = riskLevel === 'high' || riskLevel === 'drought';
-          const isMedium = riskLevel === 'medium' || riskLevel === 'moderate';
-
-          const action = latest.recommendation || 'Continue standard monitoring';
-          const description = isHigh ? 'Critical moisture deficit detected. Urgent intervention required.' : isMedium ? 'Moderate moisture stress detected. Monitor soil moisture levels closely.' : 'Optimal moisture - continue normal irrigation.';
-          const irrigation = isHigh ? '35 mm' : isMedium ? '20 mm' : '0 mm';
-          const cost = isHigh ? '₹1,200' : isMedium ? '₹520' : 'Free';
-          const risk = isHigh ? '₹45,000' : isMedium ? '₹9,500' : 'None';
-          const confidence = isHigh ? 0.91 : isMedium ? 0.85 : 0.95;
-
-          setDetails({
-            farmId: resolvedFarmId,
-            action,
-            description,
-            irrigation,
-            cost,
-            risk,
-            confidence,
-            improvement: '20–25%',
-            roi: '3.8x',
-          });
-        } else {
-          // If no history and no analyze response, use safe fallback
-          setDetails({
-            farmId: resolvedFarmId,
-            action: 'Continue standard monitoring',
-            description: 'Vegetation status is stable. No active alerts or stress detected.',
-            irrigation: '0 mm',
-            cost: 'Free',
-            risk: 'None',
-            confidence: 0.95,
-            improvement: '0%',
-            roi: 'N/A',
-          });
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to load recommendation details:', err);
-      setError(err.message || 'Failed to load recommendation details. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      };
+      loadDemoRecommendation();
+    } else {
+      setDetails(null);
     }
-  };
+  }, [isDemoMode, isDroughtSimulated, resolvedFarmId]);
 
   useEffect(() => {
-    loadIntervention();
-  }, [isDemoMode, isDroughtSimulated]);
-
-  useEffect(() => {
-    if (details) {
+    if (details && isDemoMode) {
       confidenceProgress.setValue(0);
       Animated.timing(confidenceProgress, {
-        toValue: details.confidence,
-        duration: 350,
-        useNativeDriver: false, // width style requires layout thread
+        toValue: details.confidence || 0.95,
+        duration: 400,
+        useNativeDriver: false,
       }).start();
     }
-  }, [details]);
+  }, [details, isDemoMode]);
 
   useEffect(() => {
     if (showSuccessDialog) {
@@ -307,11 +96,30 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
     }
   }, [showSuccessDialog]);
 
-  const onRefresh = useCallback(() => {
-    loadIntervention(true);
-  }, []);
+  const triggerApply = async () => {
+    triggerHapticSelection();
+    if (!details) return;
+    
+    setIsApplying(true);
+    try {
+      await submitIntervention(resolvedFarmId, {
+        action: details.action,
+      });
 
-  if (loading && !refreshing) {
+      applyIntervention(resolvedFarmId);
+      setIsApplying(false);
+      setShowSuccessDialog(true);
+    } catch (err) {
+      if (err.message === 'SESSION_EXPIRED') {
+        setSessionExpiredVisible(true);
+      } else {
+        Alert.alert("Failed to Apply Intervention", err.message || "An error occurred.");
+      }
+      setIsApplying(false);
+    }
+  };
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <View style={styles.header}>
@@ -320,30 +128,14 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t.insights}</Text>
         </View>
-        <LoadingState message="Loading intervention details..." />
+        <LoadingState message="Analyzing farm data..." />
       </SafeAreaView>
     );
   }
-
-  if (error && !details) {
-    return (
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t.insights}</Text>
-        </View>
-        <ErrorState message={error} onRetry={() => loadIntervention(false)} />
-      </SafeAreaView>
-    );
-  }
-
-  const confidencePercent = details ? Math.round(details.confidence * 100) : 0;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <DemoBanner />
+      {isDemoMode && <DemoBanner />}
       <View style={styles.header}>
         <TouchableOpacity 
           onPress={() => {
@@ -355,44 +147,23 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
           <Feather name="arrow-left" size={22} color={materialTheme.colors.onSurface} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t.insights}</Text>
-        <TouchableOpacity style={styles.moreBtn} onPress={handleMoreMenuPress}>
-          <Feather name="more-vertical" size={20} color={materialTheme.colors.textSecondary} />
-        </TouchableOpacity>
       </View>
 
-      {details ? (
-        <ScrollView 
-          contentContainerStyle={styles.content} 
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[materialTheme.colors.primary]}
-            />
-          }
-        >
+      {isDemoMode && details ? (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Farm info & recommendation header */}
+          <Text style={styles.farmTitleText}>{getFarmName(resolvedFarmId)}</Text>
+          
           <View style={styles.recommendationBadge}>
             <Feather name="zap" size={14} color={materialTheme.colors.error} />
             <Text style={styles.recommendationText}>{t.aiRecommendation}</Text>
           </View>
 
           <Text style={styles.actionTitle}>{details.action}</Text>
-          <Text style={styles.actionDesc}>{details.description}</Text>
 
-          <View style={styles.metricsRow}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>{t.irrigation}</Text>
-              <Text style={styles.metricValue}>{details.irrigation}</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>{t.cost}</Text>
-              <Text style={styles.metricValue}>{details.cost}</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>{t.yieldRisk}</Text>
-              <Text style={styles.metricValue}>{details.risk}</Text>
-            </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>{t.whyIntervention || 'Detection Reason'}</Text>
+            <Text style={styles.infoCardText}>{details.reason}</Text>
           </View>
 
           <View style={styles.confidenceCard}>
@@ -408,26 +179,7 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
                 }
               ]} />
             </View>
-            <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
-          </View>
-
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>{t.whyIntervention}</Text>
-            <Text style={styles.infoCardText}>{t.whyInterventionDesc}</Text>
-          </View>
-
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>{t.expectedOutcome}</Text>
-            <View style={styles.outcomeRow}>
-              <View style={styles.outcomeBlock}>
-                <Text style={styles.outcomeLabel}>{t.yieldImprovement}</Text>
-                <Text style={styles.outcomeValue}>{details.improvement}</Text>
-              </View>
-              <View style={styles.outcomeBlock}>
-                <Text style={styles.outcomeLabel}>{t.roi}</Text>
-                <Text style={styles.outcomeValue}>{details.roi}</Text>
-              </View>
-            </View>
+            <Text style={styles.confidenceValue}>{Math.round((details.confidence || 0.95) * 100)}%</Text>
           </View>
 
           <TouchableOpacity 
@@ -444,10 +196,37 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </ScrollView>
       ) : (
-        <View style={styles.loaderContainer}>
-          <Text style={styles.loadingText}>No details found.</Text>
+        <View style={styles.emptyContainer}>
+          <Feather name="info" size={48} color={materialTheme.colors.textSecondary} style={{ marginBottom: 16 }} />
+          <Text style={styles.emptyText}>
+            {language === 'hi' ? 'कोई हस्तक्षेप अनुशंसा उपलब्ध नहीं है।' : 'No intervention recommendations available.'}
+          </Text>
         </View>
       )}
+
+      {/* Bottom Nav Bar */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('MyFarms'); }}>
+          <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>{t.home}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('Farms'); }}>
+          <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>{t.farms}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItemActive}>
+          <Feather name="bar-chart-2" size={20} color={materialTheme.colors.primary} />
+          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>{t.insights}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('AlertsFeed'); }}>
+          <Feather name="bell" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>{t.alerts}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('Settings'); }}>
+          <Feather name="user" size={20} color={materialTheme.colors.textSecondary} />
+          <Text style={styles.bottomNavText}>{t.profile}</Text>
+        </TouchableOpacity>
+      </View>
 
       {showSuccessDialog && (
         <View style={styles.modalOverlay}>
@@ -461,20 +240,8 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
             <View style={styles.successIconContainer}>
               <Feather name="check" size={32} color="#FFFFFF" />
             </View>
-            <Text style={styles.modalTitle}>{t.recordedTitle}</Text>
-            <Text style={styles.modalBody}>{t.recordedMsg}</Text>
-
-            <View style={styles.statsCard}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t.costSavedLabel}</Text>
-                <Text style={styles.statValueText}>{details ? details.cost : '₹1,200'}</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t.riskReductionLabel}</Text>
-                <Text style={styles.statValueText}>{details ? details.risk : '₹45,000'}</Text>
-              </View>
-            </View>
+            <Text style={styles.modalTitle}>{t.recordedTitle || 'Recommendation Applied'}</Text>
+            <Text style={styles.modalBody}>{t.recordedMsg || 'Intervention successfully recorded. AI models will update metrics in the next telemetry cycle.'}</Text>
 
             <View style={styles.modalActions}>
               <TouchableOpacity 
@@ -504,29 +271,16 @@ export const InterventionDetailScreen = ({ navigation, route }) => {
         </View>
       )}
 
-      {/* Bottom Nav Bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('MyFarms'); }}>
-          <Feather name="home" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>{t.home}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('Farms'); }}>
-          <Feather name="layers" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>{t.farms}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItemActive}>
-          <Feather name="bar-chart-2" size={20} color={materialTheme.colors.primary} />
-          <Text style={[styles.bottomNavText, styles.bottomNavTextActive]}>{t.insights}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('AlertsFeed'); }}>
-          <Feather name="bell" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>{t.alerts}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavItem} onPress={() => { triggerHapticSelection(); navigation.navigate('Settings'); }}>
-          <Feather name="user" size={20} color={materialTheme.colors.textSecondary} />
-          <Text style={styles.bottomNavText}>{t.profile}</Text>
-        </TouchableOpacity>
-      </View>
+      <SessionExpiredDialog
+        visible={sessionExpiredVisible}
+        onConfirm={() => {
+          setSessionExpiredVisible(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -559,40 +313,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: materialTheme.colors.onSurface,
   },
-  moreBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: materialTheme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: materialTheme.colors.outline,
-  },
   content: {
     paddingHorizontal: materialTheme.spacing.lg,
-    paddingBottom: materialTheme.spacing.xxl,
+    paddingBottom: 100,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
+  farmTitleText: {
+    fontSize: 16,
     fontWeight: '600',
     color: materialTheme.colors.textSecondary,
+    marginBottom: materialTheme.spacing.xs,
   },
   recommendationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: materialTheme.borderRadius.full,
-    marginBottom: materialTheme.spacing.md,
+    marginBottom: materialTheme.spacing.sm,
     gap: 6,
   },
   recommendationText: {
@@ -604,36 +343,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: materialTheme.colors.onSurface,
-    marginBottom: 4,
-  },
-  actionDesc: {
-    fontSize: 15,
-    color: materialTheme.colors.textSecondary,
-    marginBottom: materialTheme.spacing.lg,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    gap: materialTheme.spacing.sm,
-    marginBottom: materialTheme.spacing.lg,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: materialTheme.colors.surface,
-    borderRadius: materialTheme.borderRadius.card,
-    padding: materialTheme.spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: materialTheme.colors.outline,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: materialTheme.colors.textSecondary,
-    marginBottom: 4,
-  },
-  metricValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: materialTheme.colors.onSurface,
+    marginBottom: materialTheme.spacing.md,
   },
   confidenceCard: {
     backgroundColor: materialTheme.colors.surface,
@@ -685,23 +395,6 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.textSecondary,
     lineHeight: 22,
   },
-  outcomeRow: {
-    flexDirection: 'row',
-    gap: materialTheme.spacing.lg,
-  },
-  outcomeBlock: {
-    flex: 1,
-  },
-  outcomeLabel: {
-    fontSize: 12,
-    color: materialTheme.colors.textSecondary,
-    marginBottom: 4,
-  },
-  outcomeValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: materialTheme.colors.onSurface,
-  },
   primaryBtn: {
     backgroundColor: materialTheme.colors.primaryDark,
     borderRadius: materialTheme.borderRadius.button,
@@ -751,6 +444,20 @@ const styles = StyleSheet.create({
     color: materialTheme.colors.primary,
     fontWeight: '700',
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: materialTheme.spacing.xl,
+    paddingBottom: 80,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: materialTheme.colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '600',
+    lineHeight: 24,
+  },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -761,7 +468,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: 320,
     backgroundColor: '#FFFFFF',
-    borderRadius: 28, // Material 3 Spec for Dialogs
+    borderRadius: 28,
     padding: 24,
     alignItems: 'center',
     shadowColor: '#000000',
@@ -790,39 +497,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
-    marginBottom: 18,
-    lineHeight: 20,
-  },
-  statsCard: {
-    width: '100%',
-    flexDirection: 'row',
-    backgroundColor: materialTheme.colors.surfaceVariant,
-    borderWidth: 1,
-    borderColor: materialTheme.colors.outline,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
     marginBottom: 24,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 10,
-    color: '#7A7A7A',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  statValueText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: materialTheme.colors.primaryDark,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: materialTheme.colors.outline,
+    lineHeight: 20,
   },
   modalActions: {
     width: '100%',

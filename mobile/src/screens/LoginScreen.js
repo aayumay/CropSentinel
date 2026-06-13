@@ -94,23 +94,34 @@ export const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Build the correct payload based on input type
-      const credential =
-        result.type === 'phone'
-          ? { phone_number: inputValue.trim() }
-          : { email: inputValue.trim() };
+      const credential = inputValue;
+      const value = credential.trim();
+      let payload = {};
 
-      const response = await login(credential);
+      if (PHONE_REGEX.test(value)) {
+        payload = {
+          phone_number: value,
+        };
+      } else if (EMAIL_REGEX.test(value)) {
+        payload = {
+          phone_number: value,
+        };
+      }
+
+      const response = await login(payload);
+
       if (response && response.access_token) {
         setAuthToken(response.access_token);
         if (response.user) {
-          setProfileEmail(response.user.phone_number || inputValue.trim());
+          setProfileEmail(response.user.phone_number || value);
           setProfileName(`Farmer ${response.user.id}`);
         }
       }
       navigation.replace('MyFarms');
     } catch (error) {
-      console.warn('Login failed:', error);
+      if (__DEV__) {
+        console.warn('Login failed:', error);
+      }
       Alert.alert('Login Failed', error.message || 'An error occurred during authentication.');
     } finally {
       setLoading(false);

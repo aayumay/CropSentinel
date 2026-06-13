@@ -1,6 +1,14 @@
 import { API_BASE_URL } from '../config/environment';
 import { demoState } from '../config/demoState';
 
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+    this.name = 'ApiError';
+  }
+}
+
 const getApiUrl = (path) => {
   const base = API_BASE_URL || 'https://cropsentinel-on03.onrender.com';
   return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
@@ -46,14 +54,14 @@ const makeRequest = async (path, options = {}) => {
         const textErr = await response.text().catch(() => '');
         if (textErr) errMsg += ` - ${textErr}`;
       }
-      throw new Error(errMsg);
+      throw new ApiError(errMsg, response.status);
     }
 
     return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('API request timed out (10s limit exceeded).');
+      throw new ApiError('API request timed out (10s limit exceeded).', 408);
     }
     throw error;
   }
@@ -61,10 +69,10 @@ const makeRequest = async (path, options = {}) => {
 
 // ─── AUTHENTICATION ──────────────────────────────────────────────────────────
 // credentialPayload: { phone_number: string } | { email: string }
-export const login = async (credentialPayload) => {
+export const login = async (payload) => {
   return makeRequest('/auth/login', {
     method: 'POST',
-    body: JSON.stringify(credentialPayload),
+    body: JSON.stringify(payload),
   });
 };
 
@@ -117,7 +125,7 @@ export const createFarm = async (farmData) => {
 
       if (textErr) errMsg += ` - ${textErr}`;
     }
-    throw new Error(errMsg);
+    throw new ApiError(errMsg, response.status);
   }
 
   const json = await response.json();

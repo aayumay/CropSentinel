@@ -13,6 +13,7 @@ import { ErrorState } from '../components/ErrorState';
 import { useDemoState } from '../config/demoState';
 import { DemoBanner } from '../components/DemoBanner';
 import { translations } from '../constants/translations';
+import { SessionExpiredDialog } from '../components/SessionExpiredDialog';
 
 // Simple in-memory weather cache (30 minutes caching)
 let weatherCache = {
@@ -69,7 +70,9 @@ const fetchWeather = async (latitude, longitude) => {
       return formatted;
     }
   } catch (err) {
-    console.warn('Failed to fetch from Open-Meteo:', err);
+    if (__DEV__) {
+      console.warn('Failed to fetch from Open-Meteo:', err);
+    }
   }
 
   // Fallback if API fails and no cache exists
@@ -130,6 +133,7 @@ export const MyFarmsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionExpiredVisible, setSessionExpiredVisible] = useState(false);
 
   const [weatherData, setWeatherData] = useState({
     temp: '31°C',
@@ -217,10 +221,9 @@ export const MyFarmsScreen = ({ navigation }) => {
             zoneType: 'healthy',
             location: 'Punjab, India',
             recommendation: {
-              action: 'Continue current irrigation schedule',
-              estimated_cost: 0,
-              yield_loss_risk: 0,
-              confidence: 95,
+              action: 'Inspect crops and apply targeted treatment.',
+              reason: 'Pest indicators exceed safe thresholds.',
+              confidence: 88,
             }
           },
           {
@@ -234,10 +237,9 @@ export const MyFarmsScreen = ({ navigation }) => {
             zoneType: 'moderate',
             location: 'Tamil Nadu, India',
             recommendation: {
-              action: 'Increase irrigation by 20% over next 5 days',
-              estimated_cost: 520,
-              yield_loss_risk: 9500,
-              confidence: 85,
+              action: 'Improve drainage and delay irrigation.',
+              reason: 'Excessive moisture may damage root systems.',
+              confidence: 90,
             }
           },
           {
@@ -251,10 +253,9 @@ export const MyFarmsScreen = ({ navigation }) => {
             zoneType: sugarcaneZone,
             location: 'Maharashtra, India',
             recommendation: {
-              action: isDroughtSimulated ? 'Increase irrigation within 48 hours.' : 'Continue standard irrigation',
-              estimated_cost: isDroughtSimulated ? 1200 : 0,
-              yield_loss_risk: isDroughtSimulated ? 45000 : 0,
-              confidence: isDroughtSimulated ? 91 : 95,
+              action: 'Irrigate within 24 hours.',
+              reason: 'Low moisture and declining NDVI detected.',
+              confidence: 95,
             }
           }
         ];
@@ -294,14 +295,13 @@ export const MyFarmsScreen = ({ navigation }) => {
                   location: farm.location || `${Number(farm.latitude).toFixed(3)}°, ${Number(farm.longitude).toFixed(3)}°`,
                   recommendation: {
                     action: latest.recommendation || 'Continue standard monitoring',
-                    estimated_cost: 0,
-                    yield_loss_risk: 0,
-                    confidence: 95
                   }
                 };
               }
             } catch (err) {
-              console.warn(`Failed to fetch history for farm ${farm.id}:`, err);
+              if (__DEV__) {
+                console.warn(`Failed to fetch history for farm ${farm.id}:`, err);
+              }
             }
             // Safe fallback if history is not available or fails
             return {
@@ -316,9 +316,6 @@ export const MyFarmsScreen = ({ navigation }) => {
               location: farm.location || `${Number(farm.latitude).toFixed(3)}°, ${Number(farm.longitude).toFixed(3)}°`,
               recommendation: {
                 action: 'Continue standard monitoring',
-                estimated_cost: 0,
-                yield_loss_risk: 0,
-                confidence: 95
               }
             };
           })
@@ -348,7 +345,13 @@ export const MyFarmsScreen = ({ navigation }) => {
         setAgents(mappedAgents);
       }
     } catch (err) {
-      console.warn('Failed to load dashboard data:', err);
+      if (err.message === 'SESSION_EXPIRED') {
+        setSessionExpiredVisible(true);
+        return;
+      }
+      if (__DEV__) {
+        console.warn('Failed to load dashboard data:', err);
+      }
       setError('Could not retrieve dashboard metrics. Please check connection and try again.');
     } finally {
       setLoading(false);
@@ -369,6 +372,11 @@ export const MyFarmsScreen = ({ navigation }) => {
 
   // Use highest risk farm recommendation as the latest AI recommendation
   const latestRec = highestRiskFarm ? highestRiskFarm.recommendation : null;
+
+  // Show latest recommendation card if in demo mode, or if in production mode and a real backend recommendation exists
+  const showRecommendationCard = isDemoMode 
+    ? !!latestRec 
+    : (!!latestRec && latestRec.action && latestRec.action !== 'Continue standard monitoring' && latestRec.action !== 'No action required.');
 
   const navigateToTab = (route) => {
     triggerHapticSelection();
@@ -538,7 +546,7 @@ export const MyFarmsScreen = ({ navigation }) => {
         )}
 
         {/* Latest AI Recommendation Card */}
-        {latestRec && (
+        {showRecommendationCard && (
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>{t.latestRecommendation}</Text>
             <View style={styles.recommendationCard}>
@@ -546,35 +554,24 @@ export const MyFarmsScreen = ({ navigation }) => {
                 <View style={styles.recIconContainer}>
                   <Feather name="cpu" size={20} color={materialTheme.colors.primary} />
                 </View>
-                <Text style={styles.recommendationTitleText} numberOfLines={2}>
-                  {latestRec.action}
-                </Text>
-              </View>
-
-              <View style={styles.recMetricsRow}>
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.estimatedCost}</Text>
-                  <Text style={styles.recMetricValue}>
-                    {latestRec.estimated_cost > 0 ? `₹${latestRec.estimated_cost}` : 'Free'}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.recommendationTitleText} numberOfLines={2}>
+                    {latestRec.action}
                   </Text>
-                </View>
-                <View style={styles.recMetricDivider} />
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.yieldAtRisk}</Text>
-                  <Text style={styles.recMetricValue}>
-                    {latestRec.yield_loss_risk > 0 ? `₹${latestRec.yield_loss_risk}` : 'None'}
-                  </Text>
-                </View>
-                <View style={styles.recMetricDivider} />
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.confidence}</Text>
-                  <Text style={styles.recMetricValue}>{latestRec.confidence}%</Text>
+                  {isDemoMode && latestRec.reason && (
+                    <Text style={{ fontSize: 13, color: materialTheme.colors.textSecondary, marginTop: 4, fontWeight: '500' }}>
+                      {latestRec.reason} (Confidence: {latestRec.confidence}%)
+                    </Text>
+                  )}
                 </View>
               </View>
 
               <TouchableOpacity
                 style={styles.recBtn}
-                onPress={() => navigateToTab('InterventionDetail')}
+                onPress={() => {
+                  triggerHapticSelection();
+                  navigation.navigate('InterventionDetail', { farmId: highestRiskFarm?.id });
+                }}
               >
                 <Text style={styles.recBtnText}>{t.viewInsights}</Text>
                 <Feather name="bar-chart-2" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
@@ -623,6 +620,16 @@ export const MyFarmsScreen = ({ navigation }) => {
           <Text style={styles.bottomNavText}>{t.profile}</Text>
         </TouchableOpacity>
       </View>
+      <SessionExpiredDialog
+        visible={sessionExpiredVisible}
+        onConfirm={() => {
+          setSessionExpiredVisible(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
     </SafeAreaView>
   );
 };

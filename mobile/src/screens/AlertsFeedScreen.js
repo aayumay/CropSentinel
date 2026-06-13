@@ -9,6 +9,7 @@ import { illustrations } from '../assets';
 import { fetchAlerts, fetchFarms } from '../services';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { SessionExpiredDialog } from '../components/SessionExpiredDialog';
 import { useDemoState } from '../config/demoState';
 import { translations } from '../constants/translations';
 
@@ -52,6 +53,7 @@ export const AlertsFeedScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionExpiredVisible, setSessionExpiredVisible] = useState(false);
 
   const loadAlerts = async (isRefreshing = false) => {
     if (isRefreshing) {
@@ -165,7 +167,13 @@ export const AlertsFeedScreen = ({ navigation }) => {
 
       setAlerts(mapped);
     } catch (err) {
-      console.warn('Failed to load alerts:', err);
+      if (err.message === 'SESSION_EXPIRED') {
+        setSessionExpiredVisible(true);
+        return;
+      }
+      if (__DEV__) {
+        console.warn('Failed to load alerts:', err);
+      }
       setError('Could not retrieve latest alerts.');
     } finally {
       setLoading(false);
@@ -302,6 +310,16 @@ export const AlertsFeedScreen = ({ navigation }) => {
           <Text style={styles.bottomNavText}>{t.profile}</Text>
         </TouchableOpacity>
       </View>
+      <SessionExpiredDialog
+        visible={sessionExpiredVisible}
+        onConfirm={() => {
+          setSessionExpiredVisible(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
     </SafeAreaView>
   );
 };

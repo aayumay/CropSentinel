@@ -74,7 +74,9 @@ export const LocationPickerScreen = ({ navigation, route }) => {
         }
       }
     } catch (e) {
-      console.warn('Auto location detection failed:', e);
+      if (__DEV__) {
+        console.warn('Auto location detection failed:', e);
+      }
     }
   };
 
@@ -113,7 +115,9 @@ export const LocationPickerScreen = ({ navigation, route }) => {
         setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
       }
     } catch (err) {
-      console.warn('Reverse geocoding failed:', err);
+      if (__DEV__) {
+        console.warn('Reverse geocoding failed:', err);
+      }
       setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
     } finally {
       setGeocoding(false);
@@ -165,7 +169,9 @@ export const LocationPickerScreen = ({ navigation, route }) => {
         reverseGeocode(latitude, longitude);
       }
     } catch (err) {
-      console.warn('Failed to retrieve current location:', err);
+      if (__DEV__) {
+        console.warn('Failed to retrieve current location:', err);
+      }
       triggerHapticWarning();
       alert('Could not retrieve current GPS location.');
     } finally {
