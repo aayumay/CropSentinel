@@ -8,6 +8,13 @@
   - [x] AlertsFeedScreen
   - [x] InterventionDetailScreen
   - [x] SettingsScreen
+  - [x] Add `touched` state tracking in `src/screens/AddFieldScreen.js`
+  - [x] Add `error` border rendering to `DropdownSelector` inside `src/screens/AddFieldScreen.js`
+  - [x] Update form validation fields to only display errors and apply red borders when fields are `touched` in `AddFieldScreen.js`
+  - [x] Set all fields as `touched` on submit in `AddFieldScreen.js` to show validation errors if the form is invalid
+  - [x] Verify validation errors do not display on load, but appear after interaction and clear on valid data input
+  - [x] Verify Edit/Delete menu actions show informative Alert
+  - [x] Run `npx expo-doctor` and `npx expo export` to check build health
 - [x] D2: Satellite Maps
   - [x] Satellite MapView
   - [x] Farm polygon rendering

@@ -25,16 +25,17 @@ const triggerHapticSuccess = async () => {
   } catch (e) {}
 };
 
-const DropdownSelector = ({ label, value, options, onSelect, placeholder, t }) => {
+const DropdownSelector = ({ label, value, options, onSelect, placeholder, t, error, onInteraction }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TouchableOpacity 
-        style={styles.fieldSelect} 
+        style={[styles.fieldSelect, error && styles.inputErrorBorder]} 
         onPress={() => {
           triggerHapticSelection();
           setIsOpen(!isOpen);
+          if (onInteraction) onInteraction();
         }}
         activeOpacity={0.7}
       >
@@ -96,6 +97,14 @@ export const AddFieldScreen = ({ navigation, route }) => {
 
   // Manual Coordinates and GPS states
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({
+    fieldName: false,
+    cropType: false,
+    soilType: false,
+    manualLat: false,
+    manualLon: false,
+    location: false,
+  });
   const [isManualExpand, setIsManualExpand] = useState(false);
   const [manualLat, setManualLat] = useState('');
   const [manualLon, setManualLon] = useState('');
@@ -234,6 +243,7 @@ export const AddFieldScreen = ({ navigation, route }) => {
     setGpsError('');
     setGpsSuccess('');
     setErrors(prev => ({ ...prev, location: null }));
+    setTouched(prev => ({ ...prev, location: true }));
     
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -292,6 +302,7 @@ export const AddFieldScreen = ({ navigation, route }) => {
   const handleManualCoordsChange = (latStr, lonStr) => {
     setManualLat(latStr);
     setManualLon(lonStr);
+    setTouched(prev => ({ ...prev, manualLat: true, manualLon: true, location: true }));
     
     setErrors(prev => ({ ...prev, location: null, manualLat: null, manualLon: null }));
     
@@ -310,6 +321,15 @@ export const AddFieldScreen = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
+    setTouched({
+      fieldName: true,
+      cropType: true,
+      soilType: true,
+      manualLat: true,
+      manualLon: true,
+      location: true,
+    });
+
     if (!isFormValid) {
       triggerHapticWarning();
       return;
@@ -422,18 +442,20 @@ export const AddFieldScreen = ({ navigation, route }) => {
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>{t.farmNameLabel}</Text>
           <TextInput
-            style={[styles.fieldInput, errors.fieldName && styles.inputErrorBorder]}
+            style={[styles.fieldInput, errors.fieldName && touched.fieldName && styles.inputErrorBorder]}
             placeholder="e.g., North Field"
             placeholderTextColor={materialTheme.colors.textSecondary}
             value={fieldName}
             onChangeText={(text) => {
               setFieldName(text);
+              setTouched(prev => ({ ...prev, fieldName: true }));
             }}
+            onBlur={() => setTouched(prev => ({ ...prev, fieldName: true }))}
             autoCorrect={false}
             autoCapitalize="words"
             editable={true}
           />
-          {errors.fieldName ? (
+          {errors.fieldName && touched.fieldName ? (
             <Text style={styles.inlineErrorText}>{errors.fieldName}</Text>
           ) : (
             <Text style={styles.helperText}>{language === 'hi' ? 'अपने खेत के लिए एक अनूठा नाम दर्ज करें (3-50 वर्ण)।' : 'Enter a unique name for your farm field (3-50 characters).'}</Text>
@@ -446,11 +468,14 @@ export const AddFieldScreen = ({ navigation, route }) => {
           options={["Wheat", "Rice", "Corn", "Sugarcane"]}
           onSelect={(val) => {
             setCropType(val);
+            setTouched(prev => ({ ...prev, cropType: true }));
           }}
+          onInteraction={() => setTouched(prev => ({ ...prev, cropType: true }))}
           placeholder={t.chooseCrop}
           t={t}
+          error={errors.cropType && touched.cropType}
         />
-        {errors.cropType ? (
+        {errors.cropType && touched.cropType ? (
           <Text style={styles.inlineErrorText}>{errors.cropType}</Text>
         ) : (
           <Text style={styles.helperText}>{language === 'hi' ? 'इस खेत में उगाई जाने वाली मुख्य फसल का चयन करें।' : 'Select the primary crop grown in this field.'}</Text>
@@ -475,11 +500,14 @@ export const AddFieldScreen = ({ navigation, route }) => {
           options={["Sandy", "Clay", "Loamy", "Silty"]}
           onSelect={(val) => {
             setSoilType(val);
+            setTouched(prev => ({ ...prev, soilType: true }));
           }}
+          onInteraction={() => setTouched(prev => ({ ...prev, soilType: true }))}
           placeholder={t.chooseSoil}
           t={t}
+          error={errors.soilType && touched.soilType}
         />
-        {errors.soilType ? (
+        {errors.soilType && touched.soilType ? (
           <Text style={styles.inlineErrorText}>{errors.soilType}</Text>
         ) : (
           <Text style={styles.helperText}>{language === 'hi' ? 'मिट्टी की बनावट का चयन करें।' : 'Select the dominant soil texture.'}</Text>
@@ -533,15 +561,16 @@ export const AddFieldScreen = ({ navigation, route }) => {
               <View style={styles.manualInputCol}>
                 <Text style={styles.manualInputLabel}>Latitude</Text>
                 <TextInput
-                  style={[styles.manualInput, errors.manualLat && styles.inputErrorBorder]}
+                  style={[styles.manualInput, errors.manualLat && touched.manualLat && styles.inputErrorBorder]}
                   placeholder="e.g. 23.0225"
                   placeholderTextColor={materialTheme.colors.textSecondary}
                   value={manualLat}
                   onChangeText={(text) => handleManualCoordsChange(text, manualLon)}
+                  onBlur={() => setTouched(prev => ({ ...prev, manualLat: true, location: true }))}
                   keyboardType="numeric"
                   editable={true}
                 />
-                {errors.manualLat ? (
+                {errors.manualLat && touched.manualLat ? (
                   <Text style={styles.inlineErrorText}>{errors.manualLat}</Text>
                 ) : (
                   <Text style={styles.helperText}>Range: -90 to 90</Text>
@@ -550,15 +579,16 @@ export const AddFieldScreen = ({ navigation, route }) => {
               <View style={styles.manualInputCol}>
                 <Text style={styles.manualInputLabel}>Longitude</Text>
                 <TextInput
-                  style={[styles.manualInput, errors.manualLon && styles.inputErrorBorder]}
+                  style={[styles.manualInput, errors.manualLon && touched.manualLon && styles.inputErrorBorder]}
                   placeholder="e.g. 72.5714"
                   placeholderTextColor={materialTheme.colors.textSecondary}
                   value={manualLon}
                   onChangeText={(text) => handleManualCoordsChange(manualLat, text)}
+                  onBlur={() => setTouched(prev => ({ ...prev, manualLon: true, location: true }))}
                   keyboardType="numeric"
                   editable={true}
                 />
-                {errors.manualLon ? (
+                {errors.manualLon && touched.manualLon ? (
                   <Text style={styles.inlineErrorText}>{errors.manualLon}</Text>
                 ) : (
                   <Text style={styles.helperText}>Range: -180 to 180</Text>
@@ -567,7 +597,7 @@ export const AddFieldScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          {errors.location && <Text style={styles.inlineErrorText}>{errors.location}</Text>}
+          {errors.location && touched.location && <Text style={styles.inlineErrorText}>{errors.location}</Text>}
         </View>
 
         {/* Location Preview Card */}

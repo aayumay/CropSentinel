@@ -241,13 +241,29 @@ export const FarmsScreen = ({ navigation }) => {
       t.cancel,
       [
         { text: t.viewDetails, onPress: () => { triggerHapticSelection(); navigation.navigate('FarmDetail', { farmId: Number(farm.id) }); } },
-        { text: t.editFarm, onPress: () => { triggerHapticSelection(); navigation.navigate('AddField', { farm }); } },
+        { 
+          text: `${t.editFarm} (Unavailable)`, 
+          onPress: () => { 
+            triggerHapticSelection(); 
+            Alert.alert(
+              language === 'hi' ? 'सुविधा अनुपलब्ध है' : 'Feature Unavailable',
+              language === 'hi' 
+                ? 'खेत विवरण अपडेट करना वर्तमान में बैकएंड सेवा द्वारा समर्थित नहीं है। केवल खेत निर्माण और देखना सक्रिय हैं।' 
+                : 'Updating farm details is currently not supported by the backend service. Only farm creation and viewing are active.'
+            ); 
+          } 
+        },
         {
-          text: t.deleteFarm,
+          text: `${t.deleteFarm} (Unavailable)`,
           style: "destructive",
           onPress: () => {
             triggerHapticWarning();
-            handleDeleteFarm(farm);
+            Alert.alert(
+              language === 'hi' ? 'सुविधा अनुपलब्ध है' : 'Feature Unavailable',
+              language === 'hi' 
+                ? 'खेतों को हटाना वर्तमान में बैकएंड सेवा द्वारा समर्थित नहीं है। केवल खेत निर्माण और देखना सक्रिय हैं।' 
+                : 'Deleting farms is currently not supported by the backend service. Only farm creation and viewing are active.'
+            );
           },
         },
         { text: t.cancel, style: "cancel" }
