@@ -1,0 +1,355 @@
+@import "tailwindcss";
+/* Inter is now loaded via <link> in index.html for faster LCP */
+
+@theme {
+  --color-brand: #4A7C59;
+  --color-brand-dark: #3d6b4a;
+  --color-brand-light: #6B9E7A;
+  --color-cream: #F8F6F0;
+  --color-cream-dark: #EDE8DC;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1A2416;
+  --color-text-secondary: #5A6B52;
+  --color-text-muted: #8A9A82;
+  --color-border: #E8E4D8;
+  --color-danger: #DC2626;
+  --color-warning: #D97706;
+  --color-success: #16A34A;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Utility classes - Mobile First */
+.desktop-only { display: none !important; }
+.mobile-only { display: block !important; }
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  background-color: #F8F6F0;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #F8F6F0;
+  color: #1A2416;
+}
+
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+.scroll-area::-webkit-scrollbar { width: 3px; }
+.scroll-area::-webkit-scrollbar-track { background: transparent; }
+.scroll-area::-webkit-scrollbar-thumb { background-color: #D4D0C8; border-radius: 4px; }
+*::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RESPONSIVE LAYOUT UTILITIES
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Navigation bar — bottom on mobile */
+.app-nav {
+  flex-shrink: 0;
+  background: var(--cs-card);
+  border-top: 1px solid var(--cs-border);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  min-height: 64px;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+  padding-top: 8px;
+  z-index: 50;
+  width: 100%;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--cs-text-muted);
+  transition: color 0.2s;
+}
+
+.nav-item.active { color: var(--cs-accent); }
+.nav-item span   { font-size: 10px; font-weight: 600; line-height: 1; }
+
+/* Grids & content width */
+.content-max      { width: 100%; }
+.dashboard-container { width: 100%; box-sizing: border-box; }
+
+.desktop-grid, .desktop-grid-large {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desktop-split {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desktop-only { display: none !important; }
+.mobile-only  { display: block; }
+
+.chart-container { height: 144px; }
+
+/* Auth split layout */
+.split-auth-container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  inset: 0;
+  background: var(--cs-bg);
+  overflow: hidden;
+}
+.split-auth-brand {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.split-auth-visual {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+/* ── Desktop (≥ 768px) ── */
+@media (min-width: 768px) {
+
+  /* Nav becomes LEFT sidebar */
+  .app-nav {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    width: 240px;
+    min-width: 240px;
+    height: 100%;
+    min-height: 0;
+    border-top: none;
+    border-right: 1px solid var(--cs-border);
+    padding-top: 32px;
+    padding-bottom: 0;
+    order: -1; /* appears on LEFT */
+  }
+
+  .nav-item {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 16px 32px;
+    gap: 16px;
+    flex: 0 0 auto;
+  }
+
+  .nav-item span { font-size: 15px !important; }
+
+  /* When nav is sidebar, the outer flex must be row */
+  /* App.jsx wraps with an inline flex-direction:column div.
+     On desktop, nav needs to be beside content.
+     We handle this by using a special class on the outer div. */
+  .app-shell-desktop {
+    flex-direction: row !important;
+    align-items: stretch;
+  }
+  .app-shell-desktop > .app-nav {
+    order: 0;
+  }
+
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .desktop-grid-large {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+  }
+
+  .desktop-split {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .desktop-split > * {
+    flex: 1;
+    min-width: 0; /* Prevent flex children from overflowing */
+  }
+
+
+  /* Allows side-by-side panels to scroll independently on desktop */
+  .desktop-scroll-wrapper {
+    height: 100%;
+    overflow: hidden;
+    align-items: stretch;
+  }
+  
+  .desktop-scroll-panel {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Custom scrollbar for sleeker desktop UI */
+    scrollbar-width: thin;
+    scrollbar-color: var(--cs-border) transparent;
+  }
+  .desktop-scroll-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+  .desktop-scroll-panel::-webkit-scrollbar-thumb {
+    background: var(--cs-border);
+    border-radius: 4px;
+  }
+
+  .desktop-split-2-1 > :first-child {
+    flex: 2;
+  }
+  .desktop-split-2-1 > :last-child {
+    flex: 1;
+  }
+
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 32px;
+  }
+
+  .content-max {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .desktop-only {
+    display: block !important;
+  }
+
+  .mobile-only {
+    display: none !important;
+  }
+
+  .chart-container {
+    height: 350px;
+  }
+
+  .split-auth-container {
+    flex-direction: row;
+  }
+
+  .split-auth-brand {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .split-auth-visual {
+    flex: 1.2;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+}
+
+.dashboard-grid-2col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .dashboard-grid-2col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    align-items: stretch;
+  }
+}
+/* --- GLOBAL STANDARDIZED CLASSES --- */
+.cs-card {
+  background: var(--cs-card);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 2px 8px var(--cs-shadow);
+  border: 1px solid var(--cs-border-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cs-border-soft);
+}
+
+.cs-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--cs-text);
+  margin: 0;
+}
+
+.cs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .cs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: stretch;
+  }
+  .cs-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .cs-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .cs-grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+

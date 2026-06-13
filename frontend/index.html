@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      viewport-fit=cover  → tells Android/iOS to render edge-to-edge,
+      extending the web content behind the status bar and notch.
+    -->
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- App title & description -->
+    <title>CropSentinel — AI-Powered Farm Intelligence</title>
+    <meta name="description"
+      content="CropSentinel uses satellite imagery and AI to give farmers real-time crop health insights and precision intervention recommendations." />
+
+    <!--
+      theme-color is dynamically injected by ThemeContext.jsx 
+      to match the exact background color of the active theme.
+    -->
+
+    <!-- PWA / Standalone mode tags ---------------------------------- -->
+    <!-- iOS: remove Safari chrome when launched from home screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CropSentinel" />
+
+    <!-- Android: hide browser UI when launched from home screen -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Prevent phone-number auto-detection (cleaner UI) -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Google Fonts — Inter (preconnect first for speed) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
