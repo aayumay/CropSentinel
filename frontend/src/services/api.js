@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://cropsentinel-on03.onrender.com' : '/api');
+let base = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://cropsentinel-on03.onrender.com' : '/api');
+if (import.meta.env.PROD && base.endsWith('/api')) {
+  base = base.replace(/\/api$/, '');
+}
+const API_BASE_URL = base;
 
 export class BackendUnavailableError extends Error {
   constructor(message) {
@@ -76,7 +80,7 @@ export async function updateProfile(profileData) {
 }
 
 export async function changePasswordApi(currentPassword, newPassword) {
-  return fetchWithFallback('/api/user/password', {
+  return fetchWithFallback('/user/password', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
@@ -87,7 +91,7 @@ export async function changePasswordApi(currentPassword, newPassword) {
 }
 
 export async function deleteAccountApi() {
-  return fetchWithFallback('/api/user/delete', {
+  return fetchWithFallback('/user/delete', {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${localStorage.getItem('cs_token')}` }
   }, null);
@@ -95,11 +99,11 @@ export async function deleteAccountApi() {
 
 // POSTS
 export async function fetchPosts() {
-  return fetchWithFallback('/api/posts', { method: 'GET' }, 'cs_posts_cache');
+  return fetchWithFallback('/posts', { method: 'GET' }, 'cs_posts_cache');
 }
 
 export async function createPost(content, authorName = "Demo Farmer") {
-  return fetchWithFallback('/api/posts', {
+  return fetchWithFallback('/posts', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
