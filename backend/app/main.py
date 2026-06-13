@@ -2,6 +2,7 @@
 CropSentinel FastAPI Application Entrypoint
 """
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.dashboard import router as dashboard_router
 from app.api.analysis import router as analysis_router
@@ -16,6 +17,15 @@ app = FastAPI(
     title="CropSentinel API",
     description="Autonomous farm crisis response system API layer",
     version="0.1"
+)
+
+# Enable CORS for cross-origin requests from Vercel to Render
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, you can replace "*" with your Vercel URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")
