@@ -22,9 +22,6 @@ export let mockFarms = [
     status: 'Crop health excellent — optimal moisture and NDVI. No intervention required.',
     recommendation: {
       action: 'Continue current irrigation schedule',
-      estimated_cost: 0,
-      yield_loss_risk: 0,
-      confidence: 95,
     },
     latitude: 30.9010,
     longitude: 75.8573,
@@ -42,9 +39,6 @@ export let mockFarms = [
     status: 'Moderate water stress detected — increase irrigation frequency.',
     recommendation: {
       action: 'Increase irrigation by 20% over next 5 days',
-      estimated_cost: 520,
-      yield_loss_risk: 9500,
-      confidence: 85,
     },
     latitude: 10.9102,
     longitude: 79.3629,
@@ -62,9 +56,6 @@ export let mockFarms = [
     status: 'Critical drought stress detected.',
     recommendation: {
       action: 'Increase irrigation within 48 hours.',
-      estimated_cost: 1200,
-      yield_loss_risk: 45000,
-      confidence: 91,
     },
     latitude: 19.8762,
     longitude: 75.3433,
@@ -95,9 +86,6 @@ export const fetchDashboard = async () => {
       status: 'Crop health stable — optimal moisture levels.',
       recommendation: {
         action: 'Continue standard irrigation',
-        estimated_cost: 0,
-        yield_loss_risk: 0,
-        confidence: 95,
       },
     };
   }
@@ -188,20 +176,12 @@ export const getIntervention = async () => {
     return {
       farm_id: 'farm_003',
       action: 'Continue standard irrigation',
-      irrigation_mm: 0,
-      cost_inr: 0,
-      risk_inr: 0,
-      confidence: 0.95,
     };
   }
 
   return {
     farm_id: 'farm_003',
     action: 'Increase irrigation within 48 hours.',
-    irrigation_mm: 35,
-    cost_inr: 1200,
-    risk_inr: 45000,
-    confidence: 0.91,
   };
 };
 
@@ -300,9 +280,6 @@ export const createFarm = async (farmData) => {
     status: 'Crop health stable.',
     recommendation: {
       action: 'Continue standard monitoring',
-      estimated_cost: 0,
-      yield_loss_risk: 0,
-      confidence: 95,
     },
     latitude: farmData.latitude,
     longitude: farmData.longitude,

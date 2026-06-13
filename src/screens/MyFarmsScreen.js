@@ -222,9 +222,6 @@ export const MyFarmsScreen = ({ navigation }) => {
             location: 'Punjab, India',
             recommendation: {
               action: 'Continue current irrigation schedule',
-              estimated_cost: 0,
-              yield_loss_risk: 0,
-              confidence: 95,
             }
           },
           {
@@ -239,9 +236,6 @@ export const MyFarmsScreen = ({ navigation }) => {
             location: 'Tamil Nadu, India',
             recommendation: {
               action: 'Increase irrigation by 20% over next 5 days',
-              estimated_cost: 520,
-              yield_loss_risk: 9500,
-              confidence: 85,
             }
           },
           {
@@ -256,9 +250,6 @@ export const MyFarmsScreen = ({ navigation }) => {
             location: 'Maharashtra, India',
             recommendation: {
               action: isDroughtSimulated ? 'Increase irrigation within 48 hours.' : 'Continue standard irrigation',
-              estimated_cost: isDroughtSimulated ? 1200 : 0,
-              yield_loss_risk: isDroughtSimulated ? 45000 : 0,
-              confidence: isDroughtSimulated ? 91 : 95,
             }
           }
         ];
@@ -298,9 +289,6 @@ export const MyFarmsScreen = ({ navigation }) => {
                   location: farm.location || `${Number(farm.latitude).toFixed(3)}°, ${Number(farm.longitude).toFixed(3)}°`,
                   recommendation: {
                     action: latest.recommendation || 'Continue standard monitoring',
-                    estimated_cost: 0,
-                    yield_loss_risk: 0,
-                    confidence: 95
                   }
                 };
               }
@@ -322,9 +310,6 @@ export const MyFarmsScreen = ({ navigation }) => {
               location: farm.location || `${Number(farm.latitude).toFixed(3)}°, ${Number(farm.longitude).toFixed(3)}°`,
               recommendation: {
                 action: 'Continue standard monitoring',
-                estimated_cost: 0,
-                yield_loss_risk: 0,
-                confidence: 95
               }
             };
           })
@@ -563,26 +548,7 @@ export const MyFarmsScreen = ({ navigation }) => {
                 </Text>
               </View>
 
-              <View style={styles.recMetricsRow}>
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.estimatedCost}</Text>
-                  <Text style={styles.recMetricValue}>
-                    {latestRec.estimated_cost > 0 ? `₹${latestRec.estimated_cost}` : 'Free'}
-                  </Text>
-                </View>
-                <View style={styles.recMetricDivider} />
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.yieldAtRisk}</Text>
-                  <Text style={styles.recMetricValue}>
-                    {latestRec.yield_loss_risk > 0 ? `₹${latestRec.yield_loss_risk}` : 'None'}
-                  </Text>
-                </View>
-                <View style={styles.recMetricDivider} />
-                <View style={styles.recMetric}>
-                  <Text style={styles.recMetricLabel}>{t.confidence}</Text>
-                  <Text style={styles.recMetricValue}>{latestRec.confidence}%</Text>
-                </View>
-              </View>
+
 
               <TouchableOpacity
                 style={styles.recBtn}

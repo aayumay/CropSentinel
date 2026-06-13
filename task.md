@@ -15,6 +15,15 @@
   - [x] Verify validation errors do not display on load, but appear after interaction and clear on valid data input
   - [x] Verify Edit/Delete menu actions show informative Alert
   - [x] Run `npx expo-doctor` and `npx expo export` to check build health
+
+## Intervention Screen Audit & Hardcoded Values Removal
+- [x] Remove hardcoded metrics assignment and UI cards in `src/screens/InterventionDetailScreen.js`
+- [x] Implement localized empty state container "No intervention recommendations available." in `InterventionDetailScreen.js`
+- [x] Remove hardcoded cost, risk, and confidence recommendation fields from `src/screens/MyFarmsScreen.js` and hide metrics row
+- [x] Remove hardcoded recommendation fields from `src/services/mockApi.js`
+- [x] Verify empty state renders correctly on the Intervention Detail Screen
+- [x] Verify that home dashboard recommendation cards hide the unsupported metrics
+- [x] Run `npx expo-doctor` and `npx expo export` to check build health
 - [x] D2: Satellite Maps
   - [x] Satellite MapView
   - [x] Farm polygon rendering

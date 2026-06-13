@@ -243,9 +243,6 @@ export const FarmDetailScreen = ({ navigation, route }) => {
           status: statusVal,
           recommendation: {
             action: statusVal,
-            estimated_cost: selectedDemo.id === 3 && isDroughtSimulated ? 1200 : 0,
-            yield_loss_risk: selectedDemo.id === 3 && isDroughtSimulated ? 45000 : 0,
-            confidence: selectedDemo.id === 3 && isDroughtSimulated ? 91 : 95
           }
         };
 
@@ -310,9 +307,6 @@ export const FarmDetailScreen = ({ navigation, route }) => {
             status: analyzeRes.risk?.recommendation || 'Crop health stable.',
             recommendation: {
               action: analyzeRes.risk?.recommendation || 'No action required.',
-              estimated_cost: 450,
-              yield_loss_risk: 12000,
-              confidence: 88
             }
           };
 
