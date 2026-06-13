@@ -25,6 +25,10 @@ class Farm(Base):
     farm_name = Column(String(100), nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
+    crop_type = Column(String(100), nullable=True)
+    sowing_date = Column(String(20), nullable=True)
+    area = Column(Float, nullable=True)
+    soil_type = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="farms")
