@@ -1,6 +1,9 @@
 """
 CropSentinel FastAPI Application Entrypoint
 """
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
@@ -13,16 +16,37 @@ from app.api.auth import router as auth_router
 from app.api.farm import router as farm_router
 from app.api.history import router as history_router
 
+load_dotenv()
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+]
+
+
+def _cors_origins() -> list[str]:
+    origins = list(DEFAULT_CORS_ORIGINS)
+    extra = os.getenv("CORS_ORIGINS", "").strip()
+    if extra:
+        for origin in extra.split(","):
+            origin = origin.strip()
+            if origin and origin not in origins:
+                origins.append(origin)
+    return origins
+
+
 app = FastAPI(
     title="CropSentinel API",
     description="Autonomous farm crisis response system API layer",
     version="0.1"
 )
 
-# Enable CORS for cross-origin requests from Vercel to Render
+# CORS for Vercel (prod) and Vite dev server (localhost)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://crop-sentinel-aayumays-projects.vercel.app"],  # In production, you can replace "*" with your Vercel URL
+    allow_origins=_cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,9 +57,6 @@ async def startup_event():
     """
     Validates environment configurations and initializes database tables on application launch.
     """
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
     
     # 1. Environment Variable Validation
     required_vars = ["COPERNICUS_CLIENT_ID", "COPERNICUS_CLIENT_SECRET", "GROQ_API_KEY"]
@@ -53,12 +74,22 @@ async def startup_event():
         raise RuntimeError(error_message)
         
     # 2. Database Schema Table Creation
-    from app.db.database import engine, Base
+    from app.db.database import engine, Base, migrate_farm_columns
     import app.db.models  # Required to register model metadata
     
     if engine is not None:
         try:
             Base.metadata.create_all(bind=engine)
+            migrate_farm_columns()
+            from app.db.database import SessionLocal
+            from app.services.farm_backfill import backfill_farm_metadata
+            db = SessionLocal()
+            try:
+                filled = backfill_farm_metadata(db)
+                if filled:
+                    print(f"Backfilled metadata on {filled} existing farm(s).", flush=True)
+            finally:
+                db.close()
             print("Database tables initialized successfully.", flush=True)
         except Exception as e:
             print(f"Error creating database tables: {e}", flush=True)
