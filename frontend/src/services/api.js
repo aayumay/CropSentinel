@@ -172,6 +172,35 @@ export async function runAnalysisBackend() {
   }, null);
 }
 
+function _mockAnalysis(latitude, longitude) {
+  // Deterministic per farm so values are stable across refreshes.
+  const seed = Math.abs(Math.round((latitude || 20) * 100 + (longitude || 77) * 10));
+  const temp     = 28 + (seed % 12);
+  const humidity = 55 + (seed % 30);
+  const wind     = 8  + (seed % 14);
+  const rainProb = 20 + (seed % 50);
+  const ndvi     = +(0.42 + (seed % 30) / 200).toFixed(2);
+  const levels   = ['LOW', 'MEDIUM', 'LOW', 'LOW', 'HIGH'];
+  const riskLevel = levels[seed % levels.length];
+  return {
+    weather: {
+      location: 'Estimated',
+      current: { temperature: temp, humidity, wind_speed: wind, precipitation_probability: rainProb },
+      forecast: Array.from({ length: 7 }, (_, i) => ({
+        date: new Date(Date.now() + i * 86400000).toISOString().slice(0, 10),
+        temp_max: temp + 3, temp_min: temp - 5,
+        rainfall_mm: rainProb > 50 ? 4.2 : 0,
+        rain_probability: Math.min(100, rainProb + i * 3),
+      })),
+      is_fallback: true,
+    },
+    satellite: { ndvi, moisture: humidity < 60 ? 'LOW' : 'ADEQUATE', health: ndvi > 0.5 ? 'GOOD' : 'MODERATE' },
+    risk: { risk_level: riskLevel, risk_score: (seed % 60) / 100, confidence: 0.72 },
+    intervention: { action: riskLevel === 'HIGH' ? 'Irrigate within 48 hours' : 'Continue normal practices', priority: riskLevel },
+    _offline: true,
+  };
+}
+
 export async function analyzeFarm(latitude, longitude, farmId) {
   const cacheKey = `cs_analysis_${farmId || `${latitude}_${longitude}`}`;
   const cachedData = sessionStorage.getItem(cacheKey);
@@ -184,19 +213,24 @@ export async function analyzeFarm(latitude, longitude, farmId) {
   }
 
   const token = localStorage.getItem('cs_token');
-  const result = await fetchWithFallback('/analyze', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ latitude: parseFloat(latitude), longitude: parseFloat(longitude) })
-  }, cacheKey);
+  try {
+    const result = await fetchWithFallback('/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ latitude: parseFloat(latitude), longitude: parseFloat(longitude) })
+    }, cacheKey);
 
-  if (result) {
-    sessionStorage.setItem(cacheKey, JSON.stringify(result));
+    if (result) {
+      sessionStorage.setItem(cacheKey, JSON.stringify(result));
+    }
+    return result;
+  } catch (e) {
+    // Backend unavailable and no cache — return offline mock so the UI stays populated.
+    return _mockAnalysis(latitude, longitude);
   }
-  return result;
 }
 
 export async function createFarm(farmData) {
@@ -237,12 +271,19 @@ export async function fetchNdviHistory(latitude, longitude) {
   }, `cs_ndvi_history_${latitude}_${longitude}`);
 }
 
-export async function fetchMarketHistory(latitude, longitude) {
+export async function fetchMarketHistory(latitude, longitude, commodity = 'wheat') {
   const token = localStorage.getItem('cs_token');
-  const qs = `?lat=${latitude}&lng=${longitude}`;
+  const qs = `?lat=${latitude}&lng=${longitude}&commodity=${encodeURIComponent(commodity || 'wheat')}`;
   return fetchWithFallback(`/market-history${qs}`, {
     headers: { 'Authorization': `Bearer ${token}` }
-  }, `cs_market_history_${latitude}_${longitude}`);
+  }, `cs_market_history_${latitude}_${longitude}_${commodity || 'wheat'}`);
+}
+
+export async function fetchFarmHistory(farmId) {
+  const token = localStorage.getItem('cs_token');
+  return fetchWithFallback(`/history/${farmId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }, `cs_history_${farmId}`);
 }
 
 export async function fetchAlerts() {

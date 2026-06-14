@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useI18n } from '../I18nContext';
+import { fetchFarmHistory } from '../services/api';
 
-import { Bell, X, ChevronRight, Droplets, Sun, Leaf, Thermometer, Wind, Clock, Trash2 } from 'lucide-react';
+import { Bell, X, ChevronRight, Droplets, Sun, Leaf, Thermometer, Wind, Clock, Trash2, History } from 'lucide-react';
 
 function AlertDetailModal({ alert, onClose }) {
   const Icon = alert.icon;
@@ -60,6 +61,8 @@ export default function AlertsScreen() {
   const { t } = useI18n();
   const { state } = useCropSentinel();
   const [alerts, setAlerts] = useState([]);
+  const [historyRecords, setHistoryRecords] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   React.useEffect(() => {
     const derivedAlerts = [];
@@ -87,12 +90,24 @@ export default function AlertsScreen() {
     }
     setAlerts(derivedAlerts);
   }, [state.farms]);
+
   const [activeTab, setActiveTab] = useState('Active'); // 'Active' | 'History'
   const [selectedAlert, setSelectedAlert] = useState(null);
 
-  const activeAlerts  = alerts.filter(a => a.category === 'Active');
-  const historyAlerts = alerts.filter(a => a.category === 'History');
-  const displayed = activeTab === 'Active' ? activeAlerts : historyAlerts;
+  // Fetch analysis history when the History tab is opened
+  React.useEffect(() => {
+    if (activeTab !== 'History' || !state.activeFarmId) return;
+    setHistoryLoading(true);
+    fetchFarmHistory(state.activeFarmId)
+      .then(data => {
+        if (data && data.history) setHistoryRecords(data.history);
+        else setHistoryRecords([]);
+      })
+      .catch(() => setHistoryRecords([]))
+      .finally(() => setHistoryLoading(false));
+  }, [activeTab, state.activeFarmId]);
+
+  const activeAlerts = alerts.filter(a => a.category === 'Active');
   const unreadCount = activeAlerts.filter(a => a.unread).length;
 
   const clearActive = () => setAlerts(prev => prev.filter(a => a.category !== 'Active'));
@@ -133,44 +148,81 @@ export default function AlertsScreen() {
         </div>
       </div>
 
-      {/* Alert list */}
+      {/* Alert / History list */}
       <div className="content-max" style={{ flex:1, width:'100%', display:'flex', flexDirection:'column', gap:16, padding:'0 20px 32px', margin:'0 auto' }}>
-        {displayed.length === 0 ? (
-          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 0', gap:12 }}>
-            <Bell size={40} style={{ color:'#D4D0C8' }} />
-            <p style={{ fontSize:14, color:'var(--cs-text-muted)', fontWeight:600, margin:0 }}>{t('no_alerts').replace('{tab}', t(activeTab.toLowerCase()))}</p>
-          </div>
-        ) : displayed.map(alert => {
-          const Icon = alert.icon;
-          return (
-            <div key={alert.id} onClick={() => setSelectedAlert(alert)}
-              style={{ background:'var(--cs-card)', borderRadius:24, padding:14, boxShadow:'0 1px 6px var(--cs-shadow)', border:'1px solid var(--cs-border-soft)', cursor:'pointer', position:'relative' }}>
-              {alert.unread && <div style={{ position:'absolute', top:14, right:14, width:8, height:8, background:'#EF4444', borderRadius:'50%' }} />}
-              <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                <div style={{ width:38, height:38, borderRadius:14, background:alert.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon size={16} strokeWidth={2} style={{ color:alert.iconColor }} />
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2 }}>
-                    <p style={{ fontSize:12, fontWeight:700, color:'var(--cs-text)', margin:0 }}>{alert.field}</p>
-                    <p style={{ fontSize:10, color:'var(--cs-text-muted)', margin:0 }}>{alert.time}</p>
+        {activeTab === 'Active' ? (
+          activeAlerts.length === 0 ? (
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 0', gap:12 }}>
+              <Bell size={40} style={{ color:'#D4D0C8' }} />
+              <p style={{ fontSize:14, color:'var(--cs-text-muted)', fontWeight:600, margin:0 }}>{t('no_alerts').replace('{tab}', t('active'))}</p>
+            </div>
+          ) : activeAlerts.map(alert => {
+            const Icon = alert.icon;
+            return (
+              <div key={alert.id} onClick={() => setSelectedAlert(alert)}
+                style={{ background:'var(--cs-card)', borderRadius:24, padding:14, boxShadow:'0 1px 6px var(--cs-shadow)', border:'1px solid var(--cs-border-soft)', cursor:'pointer', position:'relative' }}>
+                {alert.unread && <div style={{ position:'absolute', top:14, right:14, width:8, height:8, background:'#EF4444', borderRadius:'50%' }} />}
+                <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:14, background:alert.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon size={16} strokeWidth={2} style={{ color:alert.iconColor }} />
                   </div>
-                  <p style={{ fontSize:13, fontWeight:800, color:'var(--cs-text)', margin:'0 0 2px' }}>{alert.title}</p>
-                  <p style={{ fontSize:12, color:'var(--cs-text-sec)', margin:0, lineHeight:1.4 }}>{alert.body}</p>
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }}>
-                  <ChevronRight size={14} style={{ color:'var(--cs-icon-dim)' }} />
-                  {alert.category === 'Active' && (
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2 }}>
+                      <p style={{ fontSize:12, fontWeight:700, color:'var(--cs-text)', margin:0 }}>{alert.field}</p>
+                      <p style={{ fontSize:10, color:'var(--cs-text-muted)', margin:0 }}>{alert.time}</p>
+                    </div>
+                    <p style={{ fontSize:13, fontWeight:800, color:'var(--cs-text)', margin:'0 0 2px' }}>{alert.title}</p>
+                    <p style={{ fontSize:12, color:'var(--cs-text-sec)', margin:0, lineHeight:1.4 }}>{alert.body}</p>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }}>
+                    <ChevronRight size={14} style={{ color:'var(--cs-icon-dim)' }} />
                     <button onClick={(e) => dismissOne(alert.id, e)}
                       style={{ background:'none', border:'none', cursor:'pointer', padding:2 }}>
                       <X size={13} style={{ color:'#DC2626' }} />
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
+            );
+          })
+        ) : (
+          // History tab — real analysis records from backend
+          historyLoading ? (
+            <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 0' }}>
+              <p style={{ fontSize:13, color:'var(--cs-text-muted)', fontWeight:600 }}>Loading history…</p>
             </div>
-          );
-        })}
+          ) : historyRecords.length === 0 ? (
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 0', gap:12 }}>
+              <History size={40} style={{ color:'#D4D0C8' }} />
+              <p style={{ fontSize:14, color:'var(--cs-text-muted)', fontWeight:600, margin:0 }}>No analysis history yet for this farm.</p>
+            </div>
+          ) : historyRecords.map((rec, i) => {
+            const riskColor = rec.risk_level === 'HIGH' ? '#DC2626' : rec.risk_level === 'MEDIUM' ? '#D97706' : '#16A34A';
+            const riskBg   = rec.risk_level === 'HIGH' ? '#FEE2E2' : rec.risk_level === 'MEDIUM' ? '#FEF3C7' : '#DCFCE7';
+            return (
+              <div key={i} style={{ background:'var(--cs-card)', borderRadius:20, padding:14, boxShadow:'0 1px 6px var(--cs-shadow)', border:'1px solid var(--cs-border-soft)' }}>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:14, background:riskBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Bell size={16} strokeWidth={2} style={{ color:riskColor }} />
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                      <span style={{ fontSize:11, fontWeight:800, color:riskColor, background:riskBg, padding:'2px 8px', borderRadius:20 }}>{rec.risk_level}</span>
+                      <p style={{ fontSize:10, color:'var(--cs-text-muted)', margin:0 }}>
+                        {new Date(rec.created_at).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' })}
+                      </p>
+                    </div>
+                    <p style={{ fontSize:13, fontWeight:700, color:'var(--cs-text)', margin:'0 0 2px' }}>{rec.recommendation}</p>
+                    <div style={{ display:'flex', gap:16, marginTop:6 }}>
+                      <span style={{ fontSize:10, color:'var(--cs-text-muted)' }}>NDVI <strong style={{ color:'var(--cs-text)' }}>{rec.ndvi?.toFixed(3) ?? '--'}</strong></span>
+                      <span style={{ fontSize:10, color:'var(--cs-text-muted)' }}>Risk Score <strong style={{ color:'var(--cs-text)' }}>{rec.risk_score ?? '--'}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Alert detail modal */}

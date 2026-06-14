@@ -37,6 +37,7 @@ export default function InsightsScreen() {
   React.useEffect(() => {
     if (!activeFarm.latitude || !activeFarm.longitude) return;
 
+    setMarketHistory([]);
     fetchNdviHistory(activeFarm.latitude, activeFarm.longitude).then(data => {
       if(data && Array.isArray(data)) {
         const mapped = data.map(d => ({
@@ -47,7 +48,7 @@ export default function InsightsScreen() {
       }
     }).catch(console.error);
 
-    fetchMarketHistory(activeFarm.latitude, activeFarm.longitude).then(data => {
+    fetchMarketHistory(activeFarm.latitude, activeFarm.longitude, activeFarm.crop_type).then(data => {
       if(data && Array.isArray(data)) {
         const mapped = data.map(d => ({
           d: new Date(d.date).toLocaleDateString(isHi ? 'hi-IN' : 'en-US', { weekday: 'short' }),
@@ -56,33 +57,59 @@ export default function InsightsScreen() {
         setMarketHistory(mapped);
       }
     }).catch(() => {});
-  }, [activeFarm.latitude, activeFarm.longitude, isHi]);
+  }, [activeFarm.latitude, activeFarm.longitude, activeFarm.crop_type, isHi]);
 
   const isStressed = activeAnalysis.risk?.risk_level === 'HIGH' || activeAnalysis.risk?.risk_level === 'CRITICAL';
   const hasWaterAction = activeAnalysis.intervention?.action?.toLowerCase().includes('irrigate');
 
-  // Market Calculation
-  let latestPrice = marketHistory.length > 0 ? marketHistory[marketHistory.length - 1].v : 0;
-  let prevPrice = marketHistory.length > 1 ? marketHistory[marketHistory.length - 2].v : latestPrice;
+  // Market Calculation — generate client-side mock when backend hasn't returned data
+  const CROP_PRICES = { wheat: 2540, rice: 2310, paddy: 2310, cotton: 7320, maize: 2180, corn: 2180, soybean: 4760, sugarcane: 355, onion: 2450, potato: 1620, tomato: 3100 };
+  const cropKey = (activeFarm.crop_type || '').toLowerCase();
+  const basePrice = CROP_PRICES[cropKey] || 2500;
 
-  if (isNaN(latestPrice) || latestPrice === 0) {
-    const CROP_PRICES = { 'wheat': 2125, 'rice': 2040, 'cotton': 6080, 'maize': 1962, 'corn': 1962, 'soybean': 4300, 'sugarcane': 315 };
-    const cropKey = (activeFarm.crop_type || '').toLowerCase();
-    let basePrice = CROP_PRICES[cropKey] || 2500; 
-    const farmIdNum = parseInt(activeFarm.id) || 1;
-    latestPrice = basePrice + ((farmIdNum * 137) % 250);
-    prevPrice = ((farmIdNum % 2) === 0) ? Math.floor(latestPrice * 0.98) : Math.floor(latestPrice * 1.015);
-  }
+  const chartHistory = React.useMemo(() => {
+    if (marketHistory.length > 0) return marketHistory;
+    // Seed by crop + farm location so each farm shows a distinct regional price.
+    const latSeed = Math.round((activeFarm.latitude || 0) * 10);
+    const lngSeed = Math.round((activeFarm.longitude || 0) * 10);
+    const seed = cropKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + latSeed * 31 + lngSeed * 17;
+    // Regional offset: farms in different areas show ±8% price variation (realistic mandi spread).
+    const regionalOffset = 1 + ((latSeed + lngSeed) % 160 - 80) / 1000;
+    const farmBase = Math.round(basePrice * regionalOffset / 5) * 5;
+    const days = 14;
+    const volFrac = ['onion','tomato','potato'].includes(cropKey) ? 0.04 : 0.013;
+    let price = farmBase;
+    const pts = [];
+    for (let i = 0; i < days; i++) {
+      const t = (seed + i * 2654435761) >>> 0;
+      const noise = (t % 2000 / 1000 - 1) * volFrac;
+      price = price * (1 + noise);
+      const d = new Date(); d.setDate(d.getDate() - (days - 1 - i));
+      pts.push({ d: d.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', { weekday: 'short' }), v: Math.round(price / 5) * 5 });
+    }
+    const scale = farmBase / pts[pts.length - 1].v;
+    return pts.map(p => ({ ...p, v: Math.round(p.v * scale / 5) * 5 }));
+  }, [marketHistory, cropKey, basePrice, activeFarm.latitude, activeFarm.longitude, isHi]);
 
-  // Simulated Weather Trend Array based on activeAnalysis.weather.current.precipitation_probability
+  let latestPrice = chartHistory[chartHistory.length - 1]?.v || basePrice;
+  let prevPrice = chartHistory[chartHistory.length - 2]?.v || latestPrice;
+
+  // Use real 7-day forecast rain probabilities from the analysis if available,
+  // otherwise fall back to a synthetic curve around the current value.
   const rainProb = activeAnalysis.weather?.current?.precipitation_probability || 0;
-  const simulatedWeatherHistory = [
-    { d: 'Mon', v: Math.max(0, rainProb - 20) },
-    { d: 'Tue', v: Math.max(0, rainProb - 10) },
-    { d: 'Wed', v: rainProb },
-    { d: 'Thu', v: Math.min(100, rainProb + 15) },
-    { d: 'Fri', v: Math.min(100, rainProb + 5) }
-  ];
+  const forecastData = activeAnalysis.weather?.forecast || [];
+  const simulatedWeatherHistory = forecastData.length >= 3
+    ? forecastData.slice(0, 7).map(d => ({
+        d: new Date(d.date).toLocaleDateString(isHi ? 'hi-IN' : 'en-US', { weekday: 'short' }),
+        v: d.rain_probability ?? 0
+      }))
+    : [
+        { d: 'Mon', v: Math.max(0, rainProb - 20) },
+        { d: 'Tue', v: Math.max(0, rainProb - 10) },
+        { d: 'Wed', v: rainProb },
+        { d: 'Thu', v: Math.min(100, rainProb + 15) },
+        { d: 'Fri', v: Math.min(100, rainProb + 5) }
+      ];
 
   // AI Logic block
   let aiInsightText = isHi ? 'मौसम और मिट्टी की नमी इष्टतम है। सामान्य खेती जारी रखें।' : 'Weather and soil moisture are optimal. Continue normal farming practices.';
@@ -217,10 +244,10 @@ export default function InsightsScreen() {
             </div>
             <div style={{ height: 160, marginTop:12, minWidth: 0, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={marketHistory} margin={{ top:5, right:5, bottom:0, left:-20 }}>
+                <LineChart data={chartHistory} margin={{ top:5, right:5, bottom:0, left:-20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--cs-border)" vertical={false} />
                   <XAxis dataKey="d" tick={{ fontSize:9, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize:9, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize:9, fill:'var(--cs-text-muted)' }} tickLine={false} axisLine={false} domain={[d => Math.floor(d * 0.96 / 10) * 10, d => Math.ceil(d * 1.04 / 10) * 10]} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line type="monotone" dataKey="v" stroke={COLORS[2]} strokeWidth={3} dot={{ r:4, fill:COLORS[2], strokeWidth:0 }} />
                 </LineChart>
@@ -232,7 +259,7 @@ export default function InsightsScreen() {
         {/* ── Row 4: AI & Actions ── */}
         <div className="cs-grid cs-grid-3">
           
-          <div className="cs-card" style={{ background: 'linear-gradient(to bottom right, #F8FAFC, #F1F5F9)' }}>
+          <div className="cs-card">
             <div className="cs-card-header">
               <div className="cs-card-icon-box" style={{ background: '#DBEAFE' }}>
                 <Lightbulb size={18} color="#2563EB" />
