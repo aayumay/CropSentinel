@@ -74,25 +74,24 @@ Complete color system implemented:
 
 ### Project Structure ✅
 ```
-Faraway/
-├── App.js (Main navigation setup)
-├── package.json (Dependencies)
-├── app.json (Expo config)
-├── babel.config.js (Babel setup)
-├── .gitignore (Git config)
-├── .env.example (Environment variables)
-├── README_FARAWAY.md (Full documentation)
-├── QUICKSTART.md (Quick start guide)
-└── src/
-    ├── theme.js (Dark green theme)
-    └── screens/
-        ├── OnboardingScreen.js
-        ├── LoginScreen.js
-        ├── MyFarmsScreen.js
-        ├── FarmDetailScreen.js
-        ├── AlertsFeedScreen.js
-        ├── InterventionDetailScreen.js
-        └── SettingsScreen.js
+CropSentinel/
+└── mobile/
+    ├── App.js (Main navigation setup)
+    ├── package.json (Dependencies)
+    ├── app.json (Expo config)
+    ├── babel.config.js (Babel setup)
+    ├── .gitignore (Git config)
+    ├── .env.example (Environment variables)
+    └── src/
+        ├── theme.js (App theme)
+        └── screens/
+            ├── OnboardingScreen.js
+            ├── LoginScreen.js
+            ├── MyFarmsScreen.js
+            ├── FarmDetailScreen.js
+            ├── AlertsFeedScreen.js
+            ├── InterventionDetailScreen.js
+            └── SettingsScreen.js
 ```
 
 ## 🚀 Ready to Run
@@ -100,14 +99,17 @@ Faraway/
 The app is ready to be built and deployed. To get started:
 
 ```bash
+# Navigate to mobile directory
+cd mobile
+
 # Install dependencies
 npm install
 
 # Start development server
-npm start
+npx expo start
 
 # Run on simulator/device
-# Press 'a' for Android, 'i' for iOS, 'w' for Web
+# Press 'a' for Android, 'i' for iOS
 ```
 
 ## 📋 Key Implementation Details
@@ -132,8 +134,8 @@ All screens are properly linked with seamless navigation:
 
 ## 📝 Documentation
 
-- **README_FARAWAY.md**: Comprehensive project documentation
-- **QUICKSTART.md**: Quick start and troubleshooting guide
+- **README.md**: Main monorepo entry point and setup guide
+- **QUICKSTART.md**: Mobile application quick start guide
 - **Inline Comments**: Code is well-commented for maintainability
 
 ## ✨ Next Steps (Optional Enhancements)

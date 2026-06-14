@@ -1,98 +1,99 @@
-# Quick Start Guide - Faraway App
+# Quick Start Guide - CropSentinel Mobile App
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16+) and npm installed
-- Expo CLI: `npm install -g expo-cli`
-- An iOS simulator or Android emulator OR a physical device with Expo Go app
+- Node.js (v18+) and npm installed
+- iOS simulator or Android emulator OR a physical device with the Expo Go app installed
 
 ### Installation Steps
 
-1. **Install Dependencies**
+1. **Navigate to the Mobile Directory**
+   ```bash
+   cd mobile
+   ```
+
+2. **Install Dependencies**
    ```bash
    npm install
    ```
 
-2. **Start the Development Server**
+3. **Start the Development Server**
    ```bash
-   npm start
+   npx expo start
    ```
 
-3. **Run the App**
-   - **iOS Simulator**: Press `i`
+4. **Run the App**
    - **Android Emulator**: Press `a`
-   - **Web Browser**: Press `w`
-   - **Physical Device**: Scan QR code with Expo Go app
+   - **iOS Simulator**: Press `i`
+   - **Physical Device**: Scan the QR code displayed in the terminal using your device camera or the Expo Go app.
+
+---
 
 ## 📁 Project Structure Overview
 
-- **`App.js`** - Main navigation setup with stack navigator
-- **`src/theme.js`** - Centralized dark green theme
-- **`src/screens/`** - All screen components
-- **`app.json`** - Expo configuration
-- **`package.json`** - Dependencies
+All mobile application files are located in the [mobile/](file:///c:/Users/Yesh%20bind/OneDrive/Desktop/Faraway/mobile/) subfolder:
+- **`mobile/App.js`** - Navigation container and error boundary setup
+- **`mobile/src/theme.js`** - App theme color and layout specifications
+- **`mobile/src/screens/`** - All React Native screen components
+- **`mobile/src/components/`** - Reusable visual elements (banners, dialogs, error boundaries)
+- **`mobile/src/services/`** - API client layer (real FastAPI queries & mock fallbacks)
+- **`mobile/app.json`** - Expo project configuration
+- **`mobile/package.json`** - App dependencies and npm scripts
+
+---
 
 ## 🎨 Color Theme
 
-All colors are defined in `src/theme.js`:
+All colors are defined inside `mobile/src/theme.js` using a custom Material Design 3 theme:
 - Primary Green: `#1B5E20`
 - Dark Background: `#121212`
 - Surface: `#1E1E1E`
 
+---
+
 ## 📱 Screen Navigation Flow
 
-```
+```text
 Onboarding
     ↓
-Login
+Login (with JWT auth)
     ↓
-MyFarms (Hub)
-    ├→ FarmDetail
-    ├→ AlertsFeed
-    │   └→ InterventionDetail
-    └→ Settings
+MyFarms (Hub / Dashboard)
+    ├→ FarmDetail (with health metric rings, weather info)
+    ├→ AlertsFeed (push alert notification feed)
+    │   └→ InterventionDetail (AI agent recommendations)
+    └→ Settings (English/Hindi translations & Demo Mode toggle)
 ```
+
+---
 
 ## 🔧 Development Tips
 
-1. **Hot Reload**: The app automatically reloads when you save files
-2. **Debug**: Open the Expo dev menu (shake device or Ctrl+M on Android)
-3. **Console Logs**: Visible in the terminal running `npm start`
+1. **Hot Reloading**: The app automatically reloads when you save code changes.
+2. **Developer Menu**: Shake your physical device or press `Ctrl+M` (Android) / `Cmd+D` (iOS) in the emulator to open the Expo dev menu.
+3. **Reset Cache**: If you run into Metro bundler caching issues, start using:
+   ```bash
+   npx expo start -c
+   ```
+
+---
 
 ## 📦 Key Dependencies
 
-- `react-native`: Native app framework
-- `@react-navigation/native`: Navigation foundation
-- `@react-navigation/native-stack`: Stack navigator
-- `react-native-screens`: Performance optimization
-- `expo-status-bar`: Status bar control
+- `react-native`: Cross-platform mobile development library
+- `expo`: Managed app framework layer
+- `@react-navigation/native`: Stack navigation container
+- `expo-haptics`: Physical micro-feedback actions
+- `react-native-paper`: Material UI components
 
-## ✨ Features Implemented
-
-✅ Stack navigator with 7 screens
-✅ No headers throughout app
-✅ Dark green theme on all screens
-✅ Onboarding as initial route
-✅ Mock data for farms, alerts, and interventions
-✅ Navigation between all screens
-✅ Custom back buttons and navigation
-
-## 🚧 Next Steps for Development
-
-1. Connect to real API endpoints
-2. Implement user authentication
-3. Add real farm/alert data
-4. Implement state management (Redux/Context API)
-5. Add form validation and submission
-6. Implement offline support
-7. Add app icons and splash screen
+---
 
 ## 🐛 Troubleshooting
 
 **Metro Bundler Issues**
 ```bash
-npm start -- --reset-cache
+npx expo start -c
 ```
 
 **Module Not Found**
@@ -102,33 +103,20 @@ npm install
 
 **Port 8081 Already in Use**
 ```bash
-npm start -- -p 8082
+npx expo start --port 8082
 ```
 
-## 📚 Resources
-
-- [React Native Docs](https://reactnative.dev/)
-- [React Navigation Docs](https://reactnavigation.org/)
-- [Expo Docs](https://docs.expo.dev/)
+---
 
 ## 💡 Common Tasks
 
 ### Adding a New Screen
+1. Create a file under `mobile/src/screens/NewScreen.js`.
+2. Import the new screen in `mobile/App.js`.
+3. Add a `<Stack.Screen>` element inside the navigator in `mobile/App.js`.
 
-1. Create file in `src/screens/NewScreen.js`
-2. Import in `App.js`
-3. Add `<Stack.Screen>` in the navigator
-
-### Changing Theme
-
-Edit `src/theme.js` and all screens will automatically update
-
-### Adding Navigation Parameters
-
-Use `route.params` in destination screen:
-```javascript
-const { paramName } = route.params;
-```
+### Changing Theme Colors
+Modify `mobile/src/theme.js` and all screens will automatically adjust to the new color constants.
 
 ---
 

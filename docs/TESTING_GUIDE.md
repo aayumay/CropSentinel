@@ -1,6 +1,6 @@
 # CropSentinel — Testing Guide
 
-**Version:** v1.0.0 | **Branch:** `yesh/mobile` | **Build Date:** 2026-06-12
+**Version:** v1.1.0-final | **Branch:** `main` | **Build Date:** 2026-06-14
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### Option A — Expo Go (Recommended for testers)
 1. Install **Expo Go** from the Play Store or App Store.
-2. Scan the QR code provided by the development team (`npx expo start`).
+2. Navigate to the mobile folder and scan the QR code (`cd mobile && npx expo start`).
 3. The app bundles and launches on your device.
 
 ### Option B — Preview APK (Android only)

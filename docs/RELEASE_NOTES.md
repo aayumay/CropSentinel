@@ -1,17 +1,17 @@
 # CropSentinel — Release Notes
 
-## Version: v1.0.0
+## Version: v1.1.0-final
 
 | Field | Value |
 |:---|:---|
-| **Version** | v1.0.0 |
-| **Branch** | `yesh/mobile` |
-| **Latest Commit** | `233c7e4` |
-| **Build Date** | 2026-06-12 |
+| **Version** | v1.1.0-final |
+| **Branch** | `main` |
+| **Latest Commit** | `fd8999b` |
+| **Build Date** | 2026-06-14 |
 | **Platform** | Android (Expo Go / EAS Preview APK) |
 | **Backend** | `https://cropsentinel-on03.onrender.com` |
-| **EAS Build ID** | `9b252639-2622-4b66-8eb8-8960d4cca536` |
-| **APK / Install URL** | https://expo.dev/accounts/yeshbind/projects/faraway/builds/9b252639-2622-4b66-8eb8-8960d4cca536 |
+| **EAS Build ID** | `8605741e-f7ae-474b-b283-986de68da9ca` |
+| **APK / Install URL** | https://expo.dev/accounts/yeshbind/projects/faraway/builds/8605741e-f7ae-474b-b283-986de68da9ca |
 
 ---
 
